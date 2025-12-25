@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>STOCK SCAN</title>
 
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 </head>
 <body>
@@ -15,19 +15,22 @@
   <p id="heroSub">Upload CSV to begin</p>
 </header>
 
+<!-- PERSISTENT STATUS BANNER -->
+<div id="statusBanner" class="status-banner hidden"></div>
+
 <section class="controls">
   <button id="btnUpload">Upload CSV</button>
 
-  <!-- MODERN SCAN BUTTON -->
-  <button id="btnCamera" aria-label="Scan">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-         xmlns="http://www.w3.org/2000/svg"
+  <button id="btnCamera">
+    <svg width="22" height="22" viewBox="0 0 24 24"
+         fill="none" xmlns="http://www.w3.org/2000/svg"
          style="vertical-align:-4px;margin-right:8px">
-      <path d="M4 7V5a2 2 0 0 1 2-2h2" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <path d="M20 7V5a2 2 0 0 0-2-2h-2" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <path d="M4 17v2a2 2 0 0 0 2 2h2" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <path d="M20 17v2a2 2 0 0 1-2 2h-2" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="6" y1="12" x2="18" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <path d="M4 7V5a2 2 0 0 1 2-2h2" stroke="white" stroke-width="2"/>
+      <path d="M20 7V5a2 2 0 0 0-2-2h-2" stroke="white" stroke-width="2"/>
+      <path d="M4 17v2a2 2 0 0 0 2 2h2" stroke="white" stroke-width="2"/>
+      <path d="M20 17v2a2 2 0 0 1-2 2h-2" stroke="white" stroke-width="2"/>
+      <line x1="6" y1="12" x2="18" y2="12"
+            stroke="white" stroke-width="2"/>
     </svg>
     Scan
   </button>
@@ -43,7 +46,7 @@
   <button id="btnExportMissing">Export Missing</button>
 </section>
 
-<input id="fileInput" type="file" accept=".csv" hidden />
+<input id="fileInput" type="file" accept=".csv" hidden>
 
 <section class="stats">
   <div class="stat"><span>Expected</span><strong id="expected">0</strong></div>
@@ -68,7 +71,7 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- CAMERA MODAL -->
+<!-- CAMERA -->
 <div id="camModal" class="cam-modal">
   <video id="camVideo" playsinline></video>
   <div class="cam-controls">
