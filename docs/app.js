@@ -1,6 +1,11 @@
-const STORE = 'stockscan_final_stable';
+/* ==================================================
+   STOCK SCAN – iPHONE SAFE SCAN CORE
+   ================================================== */
+
+const STORE = 'stockscan_ios_safe';
 const $ = id => document.getElementById(id);
 
+/* ---------- DOM ---------- */
 const els = {
   upload: $('btnUpload'),
   file: $('fileInput'),
@@ -8,9 +13,6 @@ const els = {
   clear: $('btnClearCSV'),
   exportS: $('btnExportScanned'),
   exportM: $('btnExportMissing'),
-
-  make: $('makeFilter'),
-  model: $('modelFilter'),
 
   expected: $('expected'),
   scanned: $('scanned'),
@@ -81,126 +83,156 @@ function toast(msg, okFlag=true){
 
 /* ---------- CSV ---------- */
 function parseCSV(text){
-  const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  const hi=lines.findIndex(l=>/stock/i.test(l)&&/condition/i.test(l));
-  if(hi<0) return [];
-  const headers=lines[hi].split(',').map(h=>h.trim());
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  const hi = lines.findIndex(l=>/stock/i.test(l)&&/condition/i.test(l));
+  if (hi < 0) return [];
+
+  const headers = lines[hi].split(',').map(h=>h.trim());
+
   return lines.slice(hi+1).map(l=>{
-    const v=l.split(',');
-    const o={};
+    const v = l.split(',');
+    const o = {};
     headers.forEach((h,i)=>{
-      const n=h.toLowerCase();
-      if(n.includes('stock')) o.Stock=clean(v[i]);
-      if(n.includes('serial')) o.Serial=v[i]?.trim();
-      if(n==='make') o.Make=v[i]?.trim();
-      if(n==='model') o.Model=v[i]?.trim();
-      if(n.includes('cal')) o.Calibre=v[i]?.trim();
-      if(n==='condition') o.Condition=v[i]?.trim();
+      const n = h.toLowerCase();
+      if (n.includes('stock')) o.Stock = clean(v[i]);
+      if (n.includes('serial')) o.Serial = v[i]?.trim();
+      if (n === 'make') o.Make = v[i]?.trim();
+      if (n === 'model') o.Model = v[i]?.trim();
+      if (n.includes('cal')) o.Calibre = v[i]?.trim();
+      if (n === 'condition') o.Condition = v[i]?.trim();
     });
     return o;
   }).filter(r=>r.Stock);
 }
 
 const filtered = () =>
-  state.rows.filter(r => String(r.Condition||'').toLowerCase()==='new');
+  state.rows.filter(r =>
+    String(r.Condition||'').toLowerCase() === 'new'
+  );
 
 /* ---------- UPDATE ---------- */
 function update(){
-  const f=filtered();
-  const s=f.filter(r=>state.scanned.has(r.Stock)).length;
-  const total=f.length;
-  els.expected.textContent=total;
-  els.scanned.textContent=s;
-  els.remaining.textContent=total-s;
-  const pct=total?Math.round(s/total*100):0;
-  els.pct.textContent=pct+'%';
-  els.ring.style.setProperty('--p',pct);
-  els.history.innerHTML=state.history.slice(0,5)
+  const f = filtered();
+  const s = f.filter(r=>state.scanned.has(r.Stock)).length;
+  const total = f.length;
+
+  els.expected.textContent = total;
+  els.scanned.textContent = s;
+  els.remaining.textContent = total - s;
+
+  const pct = total ? Math.round(s/total*100) : 0;
+  els.pct.textContent = pct + '%';
+  els.ring.style.setProperty('--p', pct);
+
+  els.history.innerHTML = state.history.slice(0,5)
     .map(h=>`<li>${h.Stock} · ${h.Serial||''}</li>`).join('');
+
   save();
 }
 
-/* ---------- SCAN ---------- */
-function scan(raw){
-  const code=clean(raw);
-  if(!code) return;
-  const row=filtered().find(r=>r.Stock===code);
-  if(!row || state.scanned.has(code)){
-    bad(); toast('Invalid or duplicate',false); return;
+/* ---------- SCAN (WORKING) ---------- */
+function handleScan(raw){
+  const code = clean(raw);
+  if (!code) return;
+
+  const row = filtered().find(r=>r.Stock === code);
+  if (!row || state.scanned.has(code)){
+    bad(); toast('Invalid or duplicate', false); return;
   }
+
   state.scanned.add(code);
   state.history.unshift(row);
-  els.sdStock.textContent=`STOCK: ${row.Stock}`;
-  els.sdSerial.textContent=`SERIAL: ${row.Serial||'—'}`;
-  els.sdMeta.textContent=
+
+  els.sdStock.textContent = `STOCK: ${row.Stock}`;
+  els.sdSerial.textContent = `SERIAL: ${row.Serial||'—'}`;
+  els.sdMeta.textContent =
     `Make: ${row.Make||'—'} · Model: ${row.Model||'—'} · Calibre: ${row.Calibre||'—'}`;
-  ok(); toast('Scanned',true); update();
+
+  ok(); toast('Scanned', true); update();
 }
 
-/* ---------- CAMERA ---------- */
-let reader=null, stream=null;
+/* ---------- CAMERA (iOS SAFE PATTERN) ---------- */
+let stream = null;
+let reader = null;
 
-els.camBtn.onclick = async ()=>{
-  els.camModal.style.display='block';
-  reader=new ZXing.BrowserMultiFormatReader();
-  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-  els.camVideo.srcObject=stream;
+els.camBtn.onclick = async () => {
+  if (!state.rows.length){
+    toast('Upload CSV first', false); return;
+  }
+
+  els.camModal.style.display = 'block';
+
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment' }
+  });
+
+  els.camVideo.srcObject = stream;
   await els.camVideo.play();
-  reader.decodeFromVideoDevice(null,els.camVideo,res=>{
-    if(res) scan(res.getText());
+
+  reader = new ZXing.BrowserMultiFormatReader();
+  reader.decodeFromVideoElement(els.camVideo, result => {
+    if (result) handleScan(result.getText());
   });
 };
 
-els.backMenu.onclick = ()=>{
-  reader?.reset();
-  stream?.getTracks().forEach(t=>t.stop());
-  els.camModal.style.display='none';
+els.backMenu.onclick = () => {
+  try {
+    reader?.reset();
+    stream?.getTracks().forEach(t=>t.stop());
+  } catch {}
+  els.camModal.style.display = 'none';
 };
 
-/* ---------- BLUETOOTH ---------- */
-let buf='',t=null;
-document.addEventListener('keydown',e=>{
-  if(e.key.length!==1) return;
-  buf+=e.key; clearTimeout(t);
-  t=setTimeout(()=>{scan(buf);buf='';},60);
+/* ---------- BLUETOOTH (WORKING) ---------- */
+let buf = '', timer = null;
+document.addEventListener('keydown', e=>{
+  if (e.key.length !== 1) return;
+  buf += e.key;
+  clearTimeout(timer);
+  timer = setTimeout(()=>{
+    handleScan(buf);
+    buf = '';
+  }, 50);
 });
 
 /* ---------- BUTTONS ---------- */
-els.upload.onclick=()=>els.file.click();
+els.upload.onclick = ()=>els.file.click();
 
-els.file.onchange=e=>{
-  const r=new FileReader();
-  r.onload=()=>{
-    state.rows=parseCSV(r.result);
+els.file.onchange = e=>{
+  const r = new FileReader();
+  r.onload = ()=>{
+    state.rows = parseCSV(r.result);
     state.scanned.clear();
-    state.history=[];
+    state.history = [];
     update();
-    toast('CSV loaded',true);
+    toast('CSV loaded', true);
   };
   r.readAsText(e.target.files[0]);
 };
 
-els.reset.onclick=()=>{
+els.reset.onclick = ()=>{
   state.scanned.clear();
-  state.history=[];
+  state.history = [];
   update();
-  toast('Scan reset',true);
+  toast('Scan reset', true);
 };
 
-els.clear.onclick=()=>{
+els.clear.onclick = ()=>{
   localStorage.removeItem(STORE);
   location.reload();
 };
 
-els.exportS.onclick=()=>exportCSV(
-  state.rows.filter(r=>state.scanned.has(r.Stock)),'scanned.csv');
+els.exportS.onclick = ()=>exportCSV(
+  state.rows.filter(r=>state.scanned.has(r.Stock)), 'scanned.csv'
+);
 
-els.exportM.onclick=()=>exportCSV(
-  state.rows.filter(r=>!state.scanned.has(r.Stock)),'missing.csv');
+els.exportM.onclick = ()=>exportCSV(
+  state.rows.filter(r=>!state.scanned.has(r.Stock)), 'missing.csv'
+);
 
 function exportCSV(rows,name){
-  if(!rows.length) return;
-  const csv=Object.keys(rows[0]).join(',')+'\n'+
+  if (!rows.length) return;
+  const csv = Object.keys(rows[0]).join(',')+'\n'+
     rows.map(r=>Object.values(r).join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
