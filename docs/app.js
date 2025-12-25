@@ -1,8 +1,8 @@
 /* ==================================================
-   STOCK SCAN – PREMIUM iPHONE FEEDBACK BUILD
+   STOCK SCAN – PREMIUM FEEDBACK (FIXED VISUALS)
    ================================================== */
 
-const STORAGE = 'stockscan_premium_feedback_v1';
+const STORAGE = 'stockscan_visual_fix_v1';
 
 /* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
@@ -12,18 +12,15 @@ const els = {
   make: $('makeFilter'),
   model: $('modelFilter'),
   reset: $('btnReset'),
-  status: $('statusPill'),
 
   expected: $('expected'),
   scanned: $('scanned'),
   remaining: $('remaining'),
-
-  ring: $('ring'),
   pct: $('pct'),
+  ring: $('ring'),
 
   heroTitle: $('heroTitle'),
   heroSub: $('heroSub'),
-
   lastCode: $('lastCode'),
   toast: $('toast'),
 
@@ -47,80 +44,77 @@ let state = {
 /* ---------- HELPERS ---------- */
 const norm = v => String(v ?? '').trim().toLowerCase();
 
-/* ---------- AUDIO (optional) ---------- */
-let audioCtx = null;
-let audioUnlocked = false;
-function unlockAudio(){
-  try{
-    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
-    audioCtx.resume();
-    audioUnlocked = true;
-  }catch{}
-}
-function playBeep(){
-  if(!audioUnlocked || !audioCtx) return;
-  try{
-    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-    o.type='square'; o.frequency.value=1600; g.gain.value=0.35;
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime+0.12);
-  }catch{}
-}
-
-/* ---------- PREMIUM SUCCESS FEEDBACK ---------- */
-function premiumSuccess(){
-  /* edge glow */
-  document.body.classList.add('scan-glow');
+/* ---------- FEEDBACK (JS ONLY – NO CSS DEPENDENCY) ---------- */
+function strongVisualFeedback() {
+  /* full-screen green flash */
+  const flash = document.createElement('div');
+  flash.style.position = 'fixed';
+  flash.style.inset = '0';
+  flash.style.background = 'rgba(40,220,120,0.35)';
+  flash.style.zIndex = '99998';
+  flash.style.pointerEvents = 'none';
+  document.body.appendChild(flash);
 
   /* big tick */
   const tick = document.createElement('div');
-  tick.className = 'scan-tick';
   tick.textContent = '✔';
+  tick.style.position = 'fixed';
+  tick.style.inset = '0';
+  tick.style.display = 'grid';
+  tick.style.placeItems = 'center';
+  tick.style.fontSize = '110px';
+  tick.style.fontWeight = '900';
+  tick.style.color = '#3cff8f';
+  tick.style.zIndex = '99999';
+  tick.style.transform = 'scale(0.6)';
+  tick.style.opacity = '0';
+  tick.style.transition = 'all 0.15s ease';
+
   document.body.appendChild(tick);
 
-  /* counter pulse */
-  els.scanned.classList.add('pulse');
+  requestAnimationFrame(() => {
+    tick.style.transform = 'scale(1)';
+    tick.style.opacity = '1';
+  });
 
-  /* vibration (iPhone only) */
+  /* strong iPhone vibration (if allowed) */
   if (navigator.vibrate) {
-    navigator.vibrate([30,20,30,20,30,60]);
+    navigator.vibrate([30, 20, 30, 20, 30, 60]);
   }
 
-  playBeep();
-
-  setTimeout(()=>{
-    document.body.classList.remove('scan-glow');
-    els.scanned.classList.remove('pulse');
+  setTimeout(() => {
+    flash.remove();
     tick.remove();
-  }, 420);
+  }, 300);
 }
 
 /* ---------- TOAST ---------- */
-function toast(msg, ok=true){
+function toast(msg, ok = true) {
   els.toast.textContent = msg;
-  els.toast.className = 'toast ' + (ok?'good':'bad');
-  setTimeout(()=>els.toast.textContent='',900);
+  els.toast.className = 'toast ' + (ok ? 'good' : 'bad');
+  setTimeout(() => els.toast.textContent = '', 900);
 }
 
 /* ---------- STORAGE ---------- */
-function save(){
+function save() {
   localStorage.setItem(STORAGE, JSON.stringify({
     rows: state.rows,
-    scanned:[...state.scanned],
-    make:state.make,
-    model:state.model,
-    last:state.last,
-    startTime:state.startTime
+    scanned: [...state.scanned],
+    make: state.make,
+    model: state.model,
+    last: state.last,
+    startTime: state.startTime
   }));
 }
-function load(){
-  const s=JSON.parse(localStorage.getItem(STORAGE)||'{}');
-  state.rows=s.rows||[];
-  state.scanned=new Set(s.scanned||[]);
-  state.make=s.make||'';
-  state.model=s.model||'';
-  state.last=s.last||'';
-  state.startTime=s.startTime||null;
+
+function load() {
+  const s = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+  state.rows = s.rows || [];
+  state.scanned = new Set(s.scanned || []);
+  state.make = s.make || '';
+  state.model = s.model || '';
+  state.last = s.last || '';
+  state.startTime = s.startTime || null;
 }
 
 /* ---------- CSV ---------- */
@@ -219,7 +213,7 @@ function handleScan(code){
   state.scanned.add(c);
   state.last=c;
 
-  premiumSuccess();
+  strongVisualFeedback();   // <<< GREEN FLASH + TICK (FIXED)
   toast('Scanned',true);
   update();
 }
@@ -238,7 +232,6 @@ let reader=null,stream=null,lastCam='',lastTime=0;
 const COOLDOWN=800;
 
 async function openCam(){
-  unlockAudio();
   if(!state.rows.length){toast('Upload CSV first',false);return;}
   els.camModal.style.display='block';
   try{
@@ -261,10 +254,10 @@ function closeCam(){
 }
 
 /* ---------- EVENTS ---------- */
-els.camBtn.onclick=()=>{unlockAudio();openCam();};
+els.camBtn.onclick=openCam;
 els.camClose.onclick=closeCam;
 els.camModal.onclick=e=>{if(e.target===els.camModal)closeCam();};
-els.upload.onclick=()=>{unlockAudio();els.file.value='';els.file.click();};
+els.upload.onclick=()=>{els.file.value='';els.file.click();};
 
 els.file.onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
