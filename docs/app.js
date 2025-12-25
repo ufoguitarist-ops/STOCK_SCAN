@@ -1,8 +1,8 @@
 /* ==================================================
-   STOCK SCAN – CAMERA-FIRST + STRONG FEEDBACK
+   STOCK SCAN – CAMERA-FIRST + STRONG FEEDBACK (FINAL)
    ================================================== */
 
-const STORAGE = 'stockscan_camera_primary_v3';
+const STORAGE = 'stockscan_camera_primary_v4';
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -44,26 +44,37 @@ let state = {
 /* ---------- helpers ---------- */
 const norm = v => String(v ?? '').trim().toLowerCase();
 
-/* ---------- LOUD BEEP (iOS SAFE) ---------- */
+/* ---------- AUDIO (iOS UNLOCKED) ---------- */
 let audioCtx = null;
-function playBeep() {
-  try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
+let audioUnlocked = false;
+
+function unlockAudio(){
+  if (audioUnlocked) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    audioUnlocked = true;
+  }catch{}
+}
+
+function playBeep(){
+  try{
+    unlockAudio();
+    if (!audioCtx) return;
+
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
-    osc.type = 'square';           // harsher = more noticeable
-    osc.frequency.value = 1800;    // high pitch
-    gain.gain.value = 0.35;        // loud but safe
+    osc.type = 'square';
+    osc.frequency.value = 1800;
+    gain.gain.value = 0.35;
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
     osc.start();
     osc.stop(audioCtx.currentTime + 0.12);
-  } catch {}
+  }catch{}
 }
 
 function toast(msg, ok = true){
@@ -80,20 +91,20 @@ function successFlash(){
   const flash = document.createElement('div');
   flash.style.position = 'fixed';
   flash.style.inset = '0';
-  flash.style.background = 'rgba(40, 220, 120, 0.28)';
+  flash.style.background = 'rgba(40,220,120,.28)';
   flash.style.zIndex = '99999';
   flash.style.display = 'grid';
   flash.style.placeItems = 'center';
   flash.style.fontSize = '52px';
   flash.style.fontWeight = '900';
-  flash.style.color = '#ffffff';
+  flash.style.color = '#fff';
   flash.style.backdropFilter = 'blur(2px)';
   flash.textContent = '✔ SCANNED';
 
   document.body.appendChild(flash);
 
   if (navigator.vibrate) navigator.vibrate(50);
-  playBeep();                      // <<< LOUD BEEP HERE
+  playBeep();
 
   setTimeout(() => flash.remove(), 220);
 }
@@ -240,6 +251,8 @@ let lastCamCode='', lastCamTime=0;
 const CAM_COOLDOWN=900;
 
 async function openCam(){
+  unlockAudio(); // <<< unlock audio on user tap
+
   if(!state.rows.length){
     toast('Upload CSV first',false); return;
   }
@@ -287,7 +300,10 @@ els.camClose.onclick=closeCam;
 els.camModal.onclick=e=>{ if(e.target===els.camModal) closeCam(); };
 
 /* ---------- events ---------- */
-els.upload.onclick=()=>els.file.click();
+els.upload.onclick=()=>{
+  unlockAudio(); // <<< unlock audio on tap
+  els.file.click();
+};
 
 els.file.onchange=e=>{
   const f=e.target.files[0];
