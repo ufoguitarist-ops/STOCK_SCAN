@@ -1,1 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Login – Stock Scan</title>
+<link rel="stylesheet" href="style.css" />
+</head>
 
+<body class="login-page">
+
+<div class="login-box">
+  <h1>STOCK SCAN</h1>
+  <p class="login-sub">Please sign in</p>
+
+  <input id="user" placeholder="Username" autocomplete="off" />
+  <input id="pass" type="password" placeholder="Password" />
+
+  <button id="btnLogin">Login</button>
+
+  <p class="login-hint">Authorised use only</p>
+</div>
+
+<script>
+const USER = 'admin';
+const PASS = '1234';
+
+document.getElementById('btnLogin').onclick = () => {
+  const u = document.getElementById('user').value.trim();
+  const p = document.getElementById('pass').value.trim();
+
+  if (u === USER && p === PASS) {
+    localStorage.setItem('stockscan_logged_in', 'yes');
+    location.href = 'index.html';
+  } else {
+    alert('Invalid login');
+  }
+};
+</script>
+
+</body>
+</html>
