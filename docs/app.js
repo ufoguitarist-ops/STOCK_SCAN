@@ -1,6 +1,6 @@
 /* ==================================================
    STOCK SCAN – FINAL PROD BUILD
-   Includes duplicate SERIAL detection
+   Persistent NO DUPLICATES message until first scan
    ================================================== */
 
 /* ---------- LOGIN GUARD ---------- */
@@ -9,7 +9,7 @@ if (localStorage.getItem('stockscan_logged_in') !== 'yes') {
 }
 
 /* ---------- CONSTANTS ---------- */
-const STORE = 'stockscan_final_prod_v3';
+const STORE = 'stockscan_final_prod_v4';
 const $ = id => document.getElementById(id);
 
 /* ---------- DOM ---------- */
@@ -52,7 +52,8 @@ function clean(v) {
 let state = {
   rows: [],
   scanned: new Set(),
-  history: []
+  history: [],
+  statusLocked: false   // <-- NEW
 };
 
 /* ---------- STORAGE ---------- */
@@ -89,10 +90,23 @@ function flash(color) {
 const okFlash  = () => flash('rgba(40,220,120,.45)');
 const badFlash = () => flash('rgba(220,40,40,.45)');
 
-function toast(msg, ok=true) {
+function toast(msg, ok=true, sticky=false) {
+  if (state.statusLocked && !sticky) return;
+
   els.toast.textContent = msg;
   els.toast.className = 'toast ' + (ok ? 'good' : 'bad');
-  setTimeout(() => els.toast.className = 'toast', 900);
+  els.toast.style.opacity = '1';
+
+  if (!sticky) {
+    setTimeout(() => {
+      els.toast.className = 'toast';
+    }, 900);
+  }
+}
+
+function clearToast() {
+  els.toast.className = 'toast';
+  els.toast.textContent = '';
 }
 
 /* ---------- CSV PARSER ---------- */
@@ -186,6 +200,12 @@ function handleScan(raw) {
     return;
   }
 
+  // FIRST VALID SCAN → CLEAR STATUS MESSAGE
+  if (state.scanned.size === 0 && state.statusLocked) {
+    state.statusLocked = false;
+    clearToast();
+  }
+
   state.scanned.add(code);
   state.history.unshift(row);
 
@@ -211,7 +231,7 @@ document.addEventListener('keydown', e => {
   }, 55);
 });
 
-/* ---------- CAMERA (iPHONE SAFE) ---------- */
+/* ---------- CAMERA ---------- */
 let reader = null;
 let stream = null;
 let lastCam = '';
@@ -225,7 +245,6 @@ async function openCamera() {
   }
 
   els.camModal.style.display = 'block';
-
   els.camVideo.setAttribute('playsinline', '');
   els.camVideo.muted = true;
   els.camVideo.autoplay = true;
@@ -242,11 +261,9 @@ async function openCamera() {
     const hints = new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
       ZXing.BarcodeFormat.CODE_128,
-      ZXing.BarcodeFormat.CODE_39,
       ZXing.BarcodeFormat.EAN_13,
       ZXing.BarcodeFormat.EAN_8,
       ZXing.BarcodeFormat.UPC_A,
-      ZXing.BarcodeFormat.UPC_E,
       ZXing.BarcodeFormat.ITF,
       ZXing.BarcodeFormat.QR_CODE
     ]);
@@ -299,6 +316,7 @@ els.file.onchange = e => {
 
     const dups = findDuplicateSerials(state.rows);
     if (dups.length) {
+      state.statusLocked = false;
       alert(
         '⚠️ Duplicate SERIAL numbers found:\n\n' +
         dups.map(d =>
@@ -306,7 +324,8 @@ els.file.onchange = e => {
         ).join('\n\n')
       );
     } else {
-      toast('NO DOUBLE BOOKINGS DETECTED', true);
+      state.statusLocked = true;
+      toast('NO DOUBLE BOOKINGS DETECTED', true, true);
     }
   };
   r.readAsText(f);
