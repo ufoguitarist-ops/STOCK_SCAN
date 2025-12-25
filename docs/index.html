@@ -1,54 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stock Scan</title>
-
 <link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 </head>
 <body>
 
 <script>
-if(localStorage.getItem('stockscan_logged_in')!=='yes'){
-  location.href='login.html';
+if(localStorage.getItem('logged')!=='yes'){
+  location.replace('login.html');
 }
 </script>
 
-<header>
-  <h1>STOCK SCAN</h1>
-  <p id="heroSub">Inventory Scanner</p>
-</header>
+<h2>STOCK SCAN</h2>
 
-<div id="statusBanner" class="status-banner hidden"></div>
+<button id="upload">Upload CSV</button>
+<button id="scan">Scan</button>
 
-<section class="controls">
-  <button id="btnUpload">Upload CSV</button>
-  <button id="btnCamera">Scan</button>
-</section>
+<input id="file" type="file" accept=".csv" hidden>
 
-<input id="fileInput" type="file" accept=".csv" hidden>
+<p id="status"></p>
 
-<section class="stats">
-  <div class="stat"><span>Expected</span><strong id="expected">0</strong></div>
-  <div class="stat"><span>Scanned</span><strong id="scanned">0</strong></div>
-  <div class="stat"><span>Remaining</span><strong id="remaining">0</strong></div>
-</section>
-
-<section class="scan-details">
-  <div class="sd-stock">STOCK: —</div>
-  <div class="sd-serial">SERIAL: —</div>
-  <div class="sd-meta">Make · Model · Calibre</div>
-</section>
-
-<div id="toast" class="toast"></div>
-
-<div id="camModal" class="cam-modal">
-  <video id="camVideo" playsinline></video>
-  <div class="cam-controls">
-    <button id="btnBackMenu" class="secondary">⬅ Back</button>
-  </div>
+<div id="cam" style="display:none">
+  <video id="video" playsinline></video>
+  <button onclick="closeCam()">Close</button>
 </div>
 
 <script src="app.js"></script>
