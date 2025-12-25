@@ -1,5 +1,6 @@
 /* ==================================================
-   STOCK SCAN – FINAL STABLE BUILD (LOGIN + SCAN)
+   STOCK SCAN – FINAL PROD BUILD
+   Includes duplicate SERIAL detection
    ================================================== */
 
 /* ---------- LOGIN GUARD ---------- */
@@ -8,7 +9,7 @@ if (localStorage.getItem('stockscan_logged_in') !== 'yes') {
 }
 
 /* ---------- CONSTANTS ---------- */
-const STORE = 'stockscan_final_prod_v1';
+const STORE = 'stockscan_final_prod_v2';
 const $ = id => document.getElementById(id);
 
 /* ---------- DOM ---------- */
@@ -39,11 +40,11 @@ const els = {
   backMenu: $('btnBackMenu')
 };
 
-/* ---------- NORMALISATION (CRITICAL) ---------- */
+/* ---------- NORMALISATION ---------- */
 function clean(v) {
   return String(v ?? '')
-    .replace(/\.0$/, '')      // Excel numbers
-    .replace(/\s+/g, '')      // whitespace / newlines
+    .replace(/\.0$/, '')
+    .replace(/\s+/g, '')
     .trim();
 }
 
@@ -81,7 +82,7 @@ function flash(color) {
     pointer-events:none;
   `;
   document.body.appendChild(d);
-  d.offsetHeight; // force paint on iOS
+  d.offsetHeight;
   setTimeout(() => d.remove(), 180);
 }
 
@@ -116,6 +117,28 @@ function parseCSV(text) {
     });
     return o;
   }).filter(r => r.Stock);
+}
+
+/* ---------- DUPLICATE SERIAL CHECK ---------- */
+function findDuplicateSerials(rows) {
+  const map = new Map();
+
+  rows.forEach(r => {
+    if (!r.Serial || !r.Stock) return;
+    if (!map.has(r.Serial)) map.set(r.Serial, []);
+    map.get(r.Serial).push(r);
+  });
+
+  return [...map.entries()]
+    .filter(([_, list]) =>
+      new Set(list.map(r => r.Stock)).size > 1
+    )
+    .map(([serial, list]) => ({
+      serial,
+      stocks: list.map(r => r.Stock),
+      make: list[0].Make || '—',
+      model: list[0].Model || '—'
+    }));
 }
 
 const filtered = () =>
@@ -188,7 +211,7 @@ document.addEventListener('keydown', e => {
   }, 55);
 });
 
-/* ---------- CAMERA (iPHONE SAFARI SAFE) ---------- */
+/* ---------- CAMERA (iPHONE SAFE) ---------- */
 let reader = null;
 let stream = null;
 let lastCam = '';
@@ -230,7 +253,7 @@ async function openCamera() {
 
     reader = new ZXing.BrowserMultiFormatReader(hints, 300);
 
-    reader.decodeFromVideoDevice(null, els.camVideo, (result) => {
+    reader.decodeFromVideoDevice(null, els.camVideo, result => {
       if (!result) return;
       const text = result.getText();
       const now = Date.now();
@@ -240,7 +263,7 @@ async function openCamera() {
       handleScan(text);
     });
 
-  } catch (e) {
+  } catch {
     closeCamera();
     toast('Camera unavailable', false);
   }
@@ -266,13 +289,25 @@ els.upload.onclick = () => {
 els.file.onchange = e => {
   const f = e.target.files?.[0];
   if (!f) return;
+
   const r = new FileReader();
   r.onload = () => {
     state.rows = parseCSV(r.result);
     state.scanned.clear();
     state.history = [];
     update();
-    toast('CSV loaded', true);
+
+    const dups = findDuplicateSerials(state.rows);
+    if (dups.length) {
+      alert(
+        '⚠️ Duplicate SERIAL numbers found:\n\n' +
+        dups.map(d =>
+          `SERIAL: ${d.serial}\nSTOCKS: ${d.stocks.join(', ')}\n${d.make} ${d.model}`
+        ).join('\n\n')
+      );
+    } else {
+      toast('CSV loaded — no duplicate serials', true);
+    }
   };
   r.readAsText(f);
 };
