@@ -1,9 +1,8 @@
 /* ==================================================
-   STOCK SCAN – CAMERA-FIRST, CONTINUOUS (STABLE)
-   Bluetooth still supported
+   STOCK SCAN – CAMERA-FIRST + STRONG FEEDBACK
    ================================================== */
 
-const STORAGE = 'stockscan_camera_primary_v1';
+const STORAGE = 'stockscan_camera_primary_v2';
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -54,6 +53,29 @@ function toast(msg, ok = true){
   }, 800);
 }
 
+/* ---------- SUCCESS FLASH ---------- */
+function successFlash(){
+  const flash = document.createElement('div');
+  flash.style.position = 'fixed';
+  flash.style.inset = '0';
+  flash.style.background = 'rgba(40, 220, 120, 0.25)';
+  flash.style.zIndex = '99999';
+  flash.style.display = 'grid';
+  flash.style.placeItems = 'center';
+  flash.style.fontSize = '48px';
+  flash.style.fontWeight = '900';
+  flash.style.color = '#ffffff';
+  flash.style.backdropFilter = 'blur(2px)';
+  flash.textContent = '✔ SCANNED';
+
+  document.body.appendChild(flash);
+
+  // iOS haptic
+  if (navigator.vibrate) navigator.vibrate(40);
+
+  setTimeout(() => flash.remove(), 220);
+}
+
 /* ---------- persistence ---------- */
 function save(){
   localStorage.setItem(STORAGE, JSON.stringify({
@@ -73,7 +95,7 @@ function load(){
   state.last = s.last || '';
 }
 
-/* ---------- CSV parsing (auto header detect) ---------- */
+/* ---------- CSV parsing ---------- */
 function splitCSV(line){
   const out=[], cur=[]; let q=false;
   for(let i=0;i<line.length;i++){
@@ -126,7 +148,7 @@ function filtered(){
   );
 }
 
-/* ---------- UI update ---------- */
+/* ---------- UI ---------- */
 function update(){
   if(!state.rows.length){
     els.heroTitle.textContent='Upload your CSV';
@@ -151,15 +173,10 @@ function update(){
   els.ring.style.setProperty('--p',pct);
   els.lastCode.textContent=state.last||'—';
 
-  if(remaining===0 && f.length){
-    els.heroTitle.textContent='Complete';
-    els.heroSub.textContent='All NEW items scanned';
-    els.status.textContent='Complete';
-  }else{
-    els.heroTitle.textContent='READY TO SCAN';
-    els.heroSub.textContent='Camera continuous • Bluetooth supported';
-    els.status.textContent='In progress';
-  }
+  els.heroTitle.textContent = remaining===0 && f.length ? 'Complete' : 'READY TO SCAN';
+  els.heroSub.textContent = 'Camera continuous • Bluetooth supported';
+  els.status.textContent = remaining===0 && f.length ? 'Complete' : 'In progress';
+
   save();
 }
 
@@ -177,11 +194,13 @@ function handleScan(code){
 
   state.scanned.add(c);
   state.last=c;
-  toast('Scanned');
+
+  successFlash();          // <<< STRONG SUCCESS SIGNAL
+  toast('Scanned',true);
   update();
 }
 
-/* ---------- Bluetooth scanner ---------- */
+/* ---------- Bluetooth ---------- */
 let kbBuf='', kbTimer=null;
 document.addEventListener('keydown',e=>{
   if(e.key.length!==1) return;
@@ -193,10 +212,10 @@ document.addEventListener('keydown',e=>{
   },55);
 });
 
-/* ---------- Camera scanning (ZXing continuous) ---------- */
+/* ---------- Camera (ZXing continuous) ---------- */
 let reader=null, stream=null;
 let lastCamCode='', lastCamTime=0;
-const CAM_COOLDOWN=900; // ms
+const CAM_COOLDOWN=900;
 
 async function openCam(){
   if(!state.rows.length){
@@ -204,7 +223,7 @@ async function openCam(){
   }
 
   els.camModal.style.display='block';
-  els.camHint.textContent='Starting camera…';
+  els.camHint.textContent='Scan continuously';
 
   try{
     reader=new ZXing.BrowserMultiFormatReader();
@@ -215,16 +234,12 @@ async function openCam(){
 
     els.camVideo.srcObject=stream;
     await els.camVideo.play();
-    els.camHint.textContent='Scan continuously';
 
     reader.decodeFromVideoDevice(null, els.camVideo, (res)=>{
       if(!res) return;
-
       const code=res.getText();
       const now=Date.now();
-
       if(code===lastCamCode && now-lastCamTime<CAM_COOLDOWN) return;
-
       lastCamCode=code;
       lastCamTime=now;
       handleScan(code);
