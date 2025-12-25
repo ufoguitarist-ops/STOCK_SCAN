@@ -1,49 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>STOCK SCAN</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Stock Scan</title>
 
 <link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 </head>
 <body>
 
+<script>
+if(localStorage.getItem('stockscan_logged_in')!=='yes'){
+  location.href='login.html';
+}
+</script>
+
 <header>
   <h1>STOCK SCAN</h1>
-  <p id="heroSub">Upload CSV to begin</p>
+  <p id="heroSub">Inventory Scanner</p>
 </header>
 
-<!-- PERSISTENT STATUS BANNER -->
 <div id="statusBanner" class="status-banner hidden"></div>
 
 <section class="controls">
   <button id="btnUpload">Upload CSV</button>
-
-  <button id="btnCamera">
-    <svg width="22" height="22" viewBox="0 0 24 24"
-         fill="none" xmlns="http://www.w3.org/2000/svg"
-         style="vertical-align:-4px;margin-right:8px">
-      <path d="M4 7V5a2 2 0 0 1 2-2h2" stroke="white" stroke-width="2"/>
-      <path d="M20 7V5a2 2 0 0 0-2-2h-2" stroke="white" stroke-width="2"/>
-      <path d="M4 17v2a2 2 0 0 0 2 2h2" stroke="white" stroke-width="2"/>
-      <path d="M20 17v2a2 2 0 0 1-2 2h-2" stroke="white" stroke-width="2"/>
-      <line x1="6" y1="12" x2="18" y2="12"
-            stroke="white" stroke-width="2"/>
-    </svg>
-    Scan
-  </button>
-</section>
-
-<section class="controls">
-  <button id="btnResetScan" class="secondary">Reset Scan</button>
-  <button id="btnClearCSV" class="danger">Clear CSV</button>
-</section>
-
-<section class="controls">
-  <button id="btnExportScanned">Export Scanned</button>
-  <button id="btnExportMissing">Export Missing</button>
+  <button id="btnCamera">Scan</button>
 </section>
 
 <input id="fileInput" type="file" accept=".csv" hidden>
@@ -54,28 +36,18 @@
   <div class="stat"><span>Remaining</span><strong id="remaining">0</strong></div>
 </section>
 
-<div class="ring-wrap">
-  <div class="ring" id="ring"><span id="pct">0%</span></div>
-</div>
-
 <section class="scan-details">
   <div class="sd-stock">STOCK: —</div>
   <div class="sd-serial">SERIAL: —</div>
-  <div class="sd-meta">Make: — · Model: — · Calibre: —</div>
-</section>
-
-<section class="history">
-  <h3>Last scanned</h3>
-  <ul id="history"></ul>
+  <div class="sd-meta">Make · Model · Calibre</div>
 </section>
 
 <div id="toast" class="toast"></div>
 
-<!-- CAMERA -->
 <div id="camModal" class="cam-modal">
   <video id="camVideo" playsinline></video>
   <div class="cam-controls">
-    <button id="btnBackMenu" class="secondary">⬅ Back to Menu</button>
+    <button id="btnBackMenu" class="secondary">⬅ Back</button>
   </div>
 </div>
 
