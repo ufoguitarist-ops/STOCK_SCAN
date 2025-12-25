@@ -1,34 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stock Scan</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
-</head>
-<body>
-
-<script>
-if(localStorage.getItem('logged')!=='yes'){
-  location.replace('login.html');
+body{
+  background:#020617;
+  color:white;
+  font-family:-apple-system,system-ui;
+  padding:20px;
 }
-</script>
-
-<h2>STOCK SCAN</h2>
-
-<button id="upload">Upload CSV</button>
-<button id="scan">Scan</button>
-
-<input id="file" type="file" accept=".csv" hidden>
-
-<p id="status"></p>
-
-<div id="cam" style="display:none">
-  <video id="video" playsinline></video>
-  <button onclick="closeCam()">Close</button>
-</div>
-
-<script src="app.js"></script>
-</body>
-</html>
+button{
+  padding:12px;
+  margin:6px 0;
+  width:100%;
+  font-size:16px;
+}
+video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
