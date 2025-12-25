@@ -1,4 +1,8 @@
-const STORE = 'stockscan_ultimate_v2';
+/* ==================================================
+   STOCK SCAN – HARDENED SCAN PIPELINE (FINAL)
+   ================================================== */
+
+const STORE = 'stockscan_hardened_v1';
 const $ = id => document.getElementById(id);
 
 const els = {
@@ -8,9 +12,6 @@ const els = {
   clear: $('btnClearCSV'),
   exportS: $('btnExportScanned'),
   exportM: $('btnExportMissing'),
-
-  make: $('makeFilter'),
-  model: $('modelFilter'),
 
   expected: $('expected'),
   scanned: $('scanned'),
@@ -22,8 +23,8 @@ const els = {
   sdSerial: document.querySelector('.sd-serial'),
   sdMeta: document.querySelector('.sd-meta'),
 
-  toast: $('toast'),
   history: $('history'),
+  toast: $('toast'),
 
   camBtn: $('btnCamera'),
   camModal: $('camModal'),
@@ -31,22 +32,27 @@ const els = {
   camClose: $('btnCamClose')
 };
 
+/* ---------- NORMALISATION (CRITICAL) ---------- */
+function clean(v) {
+  return String(v ?? '')
+    .replace(/\.0$/, '')   // Excel numbers
+    .replace(/\s+/g, '')   // whitespace
+    .trim();
+}
+
+/* ---------- STATE ---------- */
 let state = {
   rows: [],
   scanned: new Set(),
-  history: [],
-  locked: false
+  history: []
 };
-
-const norm = v => String(v || '').trim();
 
 /* ---------- STORAGE ---------- */
 function save() {
   localStorage.setItem(STORE, JSON.stringify({
     rows: state.rows,
     scanned: [...state.scanned],
-    history: state.history,
-    locked: state.locked
+    history: state.history
   }));
 }
 
@@ -55,10 +61,9 @@ function load() {
   state.rows = s.rows || [];
   state.scanned = new Set(s.scanned || []);
   state.history = s.history || [];
-  state.locked = s.locked || false;
 }
 
-/* ---------- FEEDBACK ---------- */
+/* ---------- VISUAL FEEDBACK ---------- */
 function flash(color) {
   const d = document.createElement('div');
   d.style.cssText = `
@@ -75,7 +80,7 @@ function flash(color) {
 const ok = () => flash('rgba(40,220,120,.4)');
 const bad = () => flash('rgba(220,40,40,.4)');
 
-/* ---------- CSV ---------- */
+/* ---------- CSV PARSER (HARDENED) ---------- */
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   const headerIndex = lines.findIndex(l =>
@@ -84,33 +89,33 @@ function parseCSV(text) {
   if (headerIndex < 0) return [];
 
   const headers = lines[headerIndex].split(',').map(h => h.trim());
-  return lines.slice(headerIndex + 1).map(l => {
-    const v = l.split(',');
+
+  return lines.slice(headerIndex + 1).map(line => {
+    const v = line.split(',');
     const o = {};
     headers.forEach((h, i) => {
       const n = h.toLowerCase();
-      if (n.includes('stock')) o.Stock = v[i];
-      if (n.includes('serial')) o.Serial = v[i];
-      if (n === 'make') o.Make = v[i];
-      if (n === 'model') o.Model = v[i];
-      if (n.includes('cal')) o.Calibre = v[i];
-      if (n === 'condition') o.Condition = v[i];
+      if (n.includes('stock')) o.Stock = clean(v[i]);
+      if (n.includes('serial')) o.Serial = v[i]?.trim();
+      if (n === 'make') o.Make = v[i]?.trim();
+      if (n === 'model') o.Model = v[i]?.trim();
+      if (n.includes('cal')) o.Calibre = v[i]?.trim();
+      if (n === 'condition') o.Condition = v[i]?.trim();
     });
     return o;
   }).filter(r => r.Stock);
 }
 
 /* ---------- FILTER ---------- */
-function filtered() {
-  return state.rows.filter(r =>
+const filtered = () =>
+  state.rows.filter(r =>
     String(r.Condition || '').toLowerCase() === 'new'
   );
-}
 
 /* ---------- UPDATE ---------- */
 function update() {
   const f = filtered();
-  const s = f.filter(r => state.scanned.has(norm(r.Stock))).length;
+  const s = f.filter(r => state.scanned.has(r.Stock)).length;
   const total = f.length;
 
   els.expected.textContent = total;
@@ -134,23 +139,18 @@ function update() {
   save();
 }
 
-/* ---------- SCAN (FIXED) ---------- */
-function scan(rawCode) {
-  const code = norm(rawCode);
+/* ---------- SCAN (GUARANTEED MATCH) ---------- */
+function scan(raw) {
+  const code = clean(raw);
   if (!code) return;
 
-  const row = filtered().find(r => norm(r.Stock) === code);
+  const row = filtered().find(r => r.Stock === code);
 
-  if (!row) {
-    bad();
-    return;
-  }
-  if (state.scanned.has(code)) {
+  if (!row || state.scanned.has(code)) {
     bad();
     return;
   }
 
-  state.locked = true;
   state.scanned.add(code);
   state.history.unshift(row);
 
@@ -207,7 +207,6 @@ els.file.onchange = e => {
     state.rows = parseCSV(r.result);
     state.scanned.clear();
     state.history = [];
-    state.locked = false;
     update();
   };
   r.readAsText(e.target.files[0]);
@@ -216,7 +215,6 @@ els.file.onchange = e => {
 els.reset.onclick = () => {
   state.scanned.clear();
   state.history = [];
-  state.locked = false;
   update();
 };
 
@@ -225,15 +223,11 @@ els.clear.onclick = () => {
   location.reload();
 };
 
-els.exportS.onclick = () => exportCSV(
-  state.rows.filter(r => state.scanned.has(norm(r.Stock))),
-  'scanned.csv'
-);
+els.exportS.onclick = () =>
+  exportCSV(state.rows.filter(r => state.scanned.has(r.Stock)), 'scanned.csv');
 
-els.exportM.onclick = () => exportCSV(
-  state.rows.filter(r => !state.scanned.has(norm(r.Stock))),
-  'missing.csv'
-);
+els.exportM.onclick = () =>
+  exportCSV(state.rows.filter(r => !state.scanned.has(r.Stock)), 'missing.csv');
 
 function exportCSV(rows, name) {
   if (!rows.length) return;
