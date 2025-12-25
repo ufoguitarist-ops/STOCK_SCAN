@@ -1,252 +1,152 @@
-/* ==================================================
-   STOCK SCAN – FINAL POLISHED BUILD
-   ================================================== */
-
-const STORAGE = 'stockscan_persist_csv_v1';
-
-/* ---------- DOM ---------- */
-const $ = id => document.getElementById(id);
-const els = {
-  upload: $('btnUpload'),
-  resetScan: $('btnResetScan'),
-  clearCSV: $('btnClearCSV'),
-  file: $('fileInput'),
-
-  make: $('makeFilter'),
-  model: $('modelFilter'),
-
-  expected: $('expected'),
-  scanned: $('scanned'),
-  remaining: $('remaining'),
-  ring: $('ring'),
-  pct: $('pct'),
-
-  sdStock: document.querySelector('.sd-stock'),
-  sdSerial: document.querySelector('.sd-serial'),
-  sdMeta: document.querySelector('.sd-meta'),
-
-  toast: $('toast'),
-
-  camBtn: $('btnCamera'),
-  camModal: $('camModal'),
-  camClose: $('btnCamClose'),
-  camVideo: $('camVideo'),
+const STORE='stockscan_ultimate_v1';
+const $=id=>document.getElementById(id);
+const els={
+upload: $('btnUpload'), file:$('fileInput'),
+reset:$('btnResetScan'), clear:$('btnClearCSV'),
+exportS:$('btnExportScanned'), exportM:$('btnExportMissing'),
+make:$('makeFilter'), model:$('modelFilter'),
+expected:$('expected'), scanned:$('scanned'), remaining:$('remaining'),
+ring:$('ring'), pct:$('pct'),
+sdStock:document.querySelector('.sd-stock'),
+sdSerial:document.querySelector('.sd-serial'),
+sdMeta:document.querySelector('.sd-meta'),
+toast:$('toast'), history:$('history'),
+camBtn:$('btnCamera'), camModal:$('camModal'),
+camVideo:$('camVideo'), camClose:$('btnCamClose')
 };
 
-/* ---------- STATE ---------- */
-let state = {
-  rows: [],
-  scanned: new Set(),
-  make: '',
-  model: ''
-};
+let state={rows:[],scanned:new Set(),locked:false,history:[]};
+const norm=v=>String(v||'').trim().toLowerCase();
 
-const norm = v => String(v ?? '').trim().toLowerCase();
-
-/* ---------- PERSISTENCE ---------- */
-function save() {
-  localStorage.setItem(STORAGE, JSON.stringify({
-    rows: state.rows,
-    scanned: [...state.scanned]
-  }));
+/* ---------- PERSIST ---------- */
+function save(){localStorage.setItem(STORE,JSON.stringify({
+rows:state.rows, scanned:[...state.scanned],
+locked:state.locked, history:state.history
+}))}
+function load(){
+const s=JSON.parse(localStorage.getItem(STORE)||'{}');
+state.rows=s.rows||[]; state.scanned=new Set(s.scanned||[]);
+state.locked=s.locked||false; state.history=s.history||[];
 }
 
-function load() {
-  const s = JSON.parse(localStorage.getItem(STORAGE) || '{}');
-  state.rows = s.rows || [];
-  state.scanned = new Set(s.scanned || []);
+/* ---------- FEEDBACK ---------- */
+function flash(color){
+const d=document.createElement('div');
+d.style=`position:fixed;inset:0;background:${color};z-index:9999`;
+document.body.appendChild(d); setTimeout(()=>d.remove(),200);
 }
-
-/* ---------- GREEN FLASH (GUARANTEED) ---------- */
-function flashGreen() {
-  const f = document.createElement('div');
-  f.style.cssText = `
-    position:fixed; inset:0;
-    background:rgba(40,220,120,.4);
-    z-index:99999;
-    pointer-events:none;
-  `;
-  document.body.appendChild(f);
-  f.offsetHeight; // force paint
-  setTimeout(() => f.remove(), 200);
-}
-
-/* ---------- TOAST ---------- */
-function toast(msg, ok=true){
-  els.toast.textContent = msg;
-  els.toast.className = 'toast ' + (ok?'good':'bad');
-  setTimeout(()=>els.toast.className='toast',900);
-}
+function ok(){flash('rgba(40,220,120,.4)')}
+function bad(){flash('rgba(220,40,40,.4)')}
 
 /* ---------- CSV ---------- */
-function splitCSV(line){
-  const out=[], cur=[]; let q=false;
-  for(const c of line){
-    if(c==='"'){q=!q; continue;}
-    if(c===','&&!q){out.push(cur.join('')); cur.length=0; continue;}
-    cur.push(c);
-  }
-  out.push(cur.join(''));
-  return out;
-}
-
-function findHeader(lines){
-  const need=[['stock'],['make'],['model'],['condition']];
-  for(let i=0;i<lines.length;i++){
-    const cols=splitCSV(lines[i]).map(norm);
-    if(need.every(g=>cols.some(c=>g.some(k=>c.includes(k))))) return i;
-  }
-  return -1;
-}
-
-function parseCSV(text){
-  const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  const h=findHeader(lines);
-  if(h<0) return [];
-
-  const headers=splitCSV(lines[h]).map(h=>{
-    const n=norm(h);
-    if(n.includes('stock')) return 'Stock';
-    if(n.includes('serial')) return 'Serial';
-    if(n==='make') return 'Make';
-    if(n==='model') return 'Model';
-    if(n.includes('cal')) return 'Calibre';
-    if(n==='condition') return 'Condition';
-    return h;
-  });
-
-  return lines.slice(h+1).map(l=>{
-    const v=splitCSV(l), o={};
-    headers.forEach((h,i)=>o[h]=(v[i]||'').trim());
-    return o;
-  }).filter(r=>r.Stock);
+function parseCSV(t){
+const l=t.split(/\r?\n/).filter(x=>x.trim());
+const h=l.findIndex(r=>/stock/i.test(r)&&/condition/i.test(r));
+const heads=l[h].split(',').map(x=>x.trim());
+return l.slice(h+1).map(r=>{
+const v=r.split(','),o={};
+heads.forEach((h,i)=>{
+const n=norm(h);
+if(n.includes('stock'))o.Stock=v[i];
+if(n.includes('serial'))o.Serial=v[i];
+if(n==='make')o.Make=v[i];
+if(n==='model')o.Model=v[i];
+if(n.includes('cal'))o.Calibre=v[i];
+if(n==='condition')o.Condition=v[i];
+});
+return o;
+}).filter(r=>r.Stock);
 }
 
 /* ---------- FILTER ---------- */
-function filtered(){
-  return state.rows.filter(r =>
-    norm(r.Condition)==='new' &&
-    (!state.make || r.Make===state.make) &&
-    (!state.model || r.Model===state.model)
-  );
-}
+const filtered=()=>state.rows.filter(r=>norm(r.Condition)==='new');
 
 /* ---------- UPDATE ---------- */
 function update(){
-  const f=filtered();
-  const s=f.filter(r=>state.scanned.has(r.Stock)).length;
-  const r=f.length-s;
-  const p=f.length?Math.round(s/f.length*100):0;
-
-  els.expected.textContent=f.length;
-  els.scanned.textContent=s;
-  els.remaining.textContent=r;
-  els.pct.textContent=p+'%';
-  els.ring.style.setProperty('--p',p);
+const f=filtered();
+const s=f.filter(r=>state.scanned.has(r.Stock)).length;
+els.expected.textContent=f.length;
+els.scanned.textContent=s;
+els.remaining.textContent=f.length-s;
+els.pct.textContent=Math.round(s/f.length*100||0)+'%';
+els.ring.style.setProperty('--p',Math.round(s/f.length*100||0));
+els.history.innerHTML=state.history.slice(0,5)
+.map(h=>`<li>${h.Stock} · ${h.Serial||''}</li>`).join('');
+if(f.length&&s===f.length){
+flash('rgba(40,220,120,.8)');
+alert('STOCK CHECK COMPLETE');
+}
+save();
 }
 
 /* ---------- SCAN ---------- */
-function handleScan(code){
-  const c=String(code||'').trim();
-  if(!c) return;
-
-  const row=filtered().find(r=>r.Stock===c);
-  if(!row){ toast('Not in NEW list',false); return; }
-  if(state.scanned.has(c)){ toast('Duplicate',false); return; }
-
-  state.scanned.add(c);
-
-  els.sdStock.textContent = `STOCK: ${row.Stock}`;
-  els.sdSerial.textContent = `SERIAL: ${row.Serial||'—'}`;
-  els.sdMeta.textContent =
-    `Make: ${row.Make||'—'} · Model: ${row.Model||'—'} · Calibre: ${row.Calibre||'—'}`;
-
-  flashGreen();
-  toast('Scanned',true);
-  update();
-  save();
+function scan(code){
+const r=filtered().find(x=>x.Stock===code);
+if(!r){bad();return}
+if(state.scanned.has(code)){bad();return}
+state.locked=true;
+state.scanned.add(code);
+state.history.unshift(r);
+els.sdStock.textContent=`STOCK: ${r.Stock}`;
+els.sdSerial.textContent=`SERIAL: ${r.Serial||'—'}`;
+els.sdMeta.textContent=`Make: ${r.Make||'—'} · Model: ${r.Model||'—'} · Calibre: ${r.Calibre||'—'}`;
+ok(); update();
 }
+
+/* ---------- CAMERA ---------- */
+let reader=null;
+els.camBtn.onclick=async()=>{
+els.camModal.style.display='block';
+reader=new ZXing.BrowserMultiFormatReader();
+const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+els.camVideo.srcObject=s; els.camVideo.play();
+reader.decodeFromVideoDevice(null,els.camVideo,res=>{
+if(res)scan(res.getText());
+});
+};
+els.camClose.onclick=()=>{
+reader?.reset();
+els.camVideo.srcObject.getTracks().forEach(t=>t.stop());
+els.camModal.style.display='none';
+};
 
 /* ---------- BLUETOOTH ---------- */
 let buf='',t=null;
 document.addEventListener('keydown',e=>{
-  if(e.key.length!==1)return;
-  buf+=e.key;
-  clearTimeout(t);
-  t=setTimeout(()=>{handleScan(buf.trim());buf='';},55);
+if(e.key.length!==1)return;
+buf+=e.key; clearTimeout(t);
+t=setTimeout(()=>{scan(buf.trim());buf='';},55);
 });
 
-/* ---------- CAMERA ---------- */
-let reader=null,stream=null,lastCam='',lastTime=0;
-const COOLDOWN=800;
+/* ---------- BUTTONS ---------- */
+els.upload.onclick=()=>els.file.click();
+els.file.onchange=e=>{
+const r=new FileReader();
+r.onload=()=>{
+state.rows=parseCSV(r.result);
+state.scanned.clear(); state.locked=false; state.history=[];
+update();
+};
+r.readAsText(e.target.files[0]);
+};
+els.reset.onclick=()=>{state.scanned.clear();state.locked=false;state.history=[];update();}
+els.clear.onclick=()=>{localStorage.removeItem(STORE);location.reload();}
 
-async function openCam(){
-  if(!state.rows.length){toast('Upload CSV first',false);return;}
-  els.camModal.style.display='block';
-  reader=new ZXing.BrowserMultiFormatReader();
-  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-  els.camVideo.srcObject=stream;
-  await els.camVideo.play();
-  reader.decodeFromVideoDevice(null,els.camVideo,res=>{
-    if(!res)return;
-    const c=res.getText(),n=Date.now();
-    if(c===lastCam&&n-lastTime<COOLDOWN)return;
-    lastCam=c; lastTime=n;
-    handleScan(c);
-  });
+els.exportS.onclick=()=>{
+const rows=state.rows.filter(r=>state.scanned.has(r.Stock));
+download(rows,'scanned.csv');
+};
+els.exportM.onclick=()=>{
+const rows=state.rows.filter(r=>!state.scanned.has(r.Stock));
+download(rows,'missing.csv');
+};
+
+function download(rows,name){
+const csv=Object.keys(rows[0]||{}).join(',')+'\n'+
+rows.map(r=>Object.values(r).join(',')).join('\n');
+const a=document.createElement('a');
+a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+a.download=name; a.click();
 }
 
-els.camBtn.onclick=openCam;
-els.camClose.onclick=()=>{
-  reader?.reset();
-  stream?.getTracks().forEach(t=>t.stop());
-  els.camModal.style.display='none';
-};
-
-/* ---------- BUTTONS ---------- */
-els.upload.onclick=()=>{els.file.value='';els.file.click();};
-
-els.resetScan.onclick=()=>{
-  state.scanned.clear();
-  toast('Scan reset',true);
-  update();
-  save();
-};
-
-els.clearCSV.onclick=()=>{
-  state.rows=[];
-  state.scanned.clear();
-  localStorage.removeItem(STORAGE);
-  els.sdStock.textContent='STOCK: —';
-  els.sdSerial.textContent='SERIAL: —';
-  els.sdMeta.textContent='Make: — · Model: — · Calibre: —';
-  update();
-  toast('CSV cleared',true);
-};
-
-/* ---------- CSV LOAD ---------- */
-els.file.onchange=e=>{
-  const f=e.target.files[0]; if(!f)return;
-  const r=new FileReader();
-  r.onload=()=>{
-    state.rows=parseCSV(r.result);
-    state.scanned.clear();
-
-    els.make.innerHTML='<option value="">All</option>'+
-      [...new Set(state.rows.map(r=>r.Make).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
-    els.model.innerHTML='<option value="">All</option>'+
-      [...new Set(state.rows.map(r=>r.Model).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
-
-    update();
-    save();
-    toast('CSV loaded',true);
-  };
-  r.readAsText(f);
-};
-
-els.make.onchange=()=>{state.make=els.make.value;update();};
-els.model.onchange=()=>{state.model=els.model.value;update();};
-
-/* ---------- INIT ---------- */
-load();
-update();
+load(); update();
