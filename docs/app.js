@@ -9,7 +9,7 @@ if (localStorage.getItem('stockscan_logged_in') !== 'yes') {
 }
 
 /* ---------- CONSTANTS ---------- */
-const STORE = 'stockscan_final_prod_v2';
+const STORE = 'stockscan_final_prod_v3';
 const $ = id => document.getElementById(id);
 
 /* ---------- DOM ---------- */
@@ -306,7 +306,7 @@ els.file.onchange = e => {
         ).join('\n\n')
       );
     } else {
-      toast('CSV loaded — no duplicate serials', true);
+      toast('NO DOUBLE BOOKINGS DETECTED', true);
     }
   };
   r.readAsText(f);
