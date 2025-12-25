@@ -1,93 +1,79 @@
-/* ==================================================
-   STOCK SCAN – FINAL STABLE BUILD
-   Camera scan + Bluetooth scan + Persistent banner
-   ================================================== */
-
 /* ---------- LOGIN GUARD ---------- */
 if (localStorage.getItem('stockscan_logged_in') !== 'yes') {
   location.href = 'login.html';
 }
 
-/* ---------- HELPERS ---------- */
-const STORE = 'stockscan_prod_v6';
-const $ = id => document.getElementById(id);
+const STORE='stockscan_prod_final';
+const $=id=>document.getElementById(id);
 
 /* ---------- DOM ---------- */
-const els = {
-  upload: $('btnUpload'),
-  file: $('fileInput'),
-  reset: $('btnResetScan'),
-  clear: $('btnClearCSV'),
-  exportS: $('btnExportScanned'),
-  exportM: $('btnExportMissing'),
+const els={
+  upload:$('btnUpload'),
+  file:$('fileInput'),
+  reset:$('btnResetScan'),
+  clear:$('btnClearCSV'),
+  exportS:$('btnExportScanned'),
+  exportM:$('btnExportMissing'),
 
-  expected: $('expected'),
-  scanned: $('scanned'),
-  remaining: $('remaining'),
-  ring: $('ring'),
-  pct: $('pct'),
+  expected:$('expected'),
+  scanned:$('scanned'),
+  remaining:$('remaining'),
+  ring:$('ring'),
+  pct:$('pct'),
 
-  sdStock: document.querySelector('.sd-stock'),
-  sdSerial: document.querySelector('.sd-serial'),
-  sdMeta: document.querySelector('.sd-meta'),
+  sdStock:document.querySelector('.sd-stock'),
+  sdSerial:document.querySelector('.sd-serial'),
+  sdMeta:document.querySelector('.sd-meta'),
 
-  history: $('history'),
-  toast: $('toast'),
-  banner: $('statusBanner'),
+  history:$('history'),
+  toast:$('toast'),
+  banner:$('statusBanner'),
 
-  camBtn: $('btnCamera'),
-  camModal: $('camModal'),
-  camVideo: $('camVideo'),
-  backMenu: $('btnBackMenu')
+  camBtn:$('btnCamera'),
+  camModal:$('camModal'),
+  camVideo:$('camVideo'),
+  backMenu:$('btnBackMenu')
 };
 
-/* ---------- NORMALISE ---------- */
-const clean = v =>
-  String(v ?? '')
-    .replace(/\.0$/, '')
-    .replace(/\s+/g, '')
-    .trim();
+/* ---------- UTIL ---------- */
+const clean=v=>String(v??'').replace(/\.0$/,'').replace(/\s+/g,'').trim();
 
 /* ---------- STATE ---------- */
-let state = {
-  rows: [],
-  scanned: new Set(),
-  history: [],
-  bannerActive: false
+let state={
+  rows:[],
+  scanned:new Set(),
+  bannerActive:false
 };
 
 /* ---------- TOAST ---------- */
-function toast(msg, good=true){
-  els.toast.textContent = msg;
-  els.toast.className = 'toast ' + (good ? 'good' : 'bad');
-  setTimeout(() => els.toast.className = 'toast', 900);
+function toast(msg,good=true){
+  els.toast.textContent=msg;
+  els.toast.className='toast '+(good?'good':'bad');
+  setTimeout(()=>els.toast.className='toast',900);
 }
 
 /* ---------- BANNER ---------- */
 function showBanner(msg){
-  els.banner.textContent = msg;
+  els.banner.textContent=msg;
   els.banner.classList.remove('hidden');
-  state.bannerActive = true;
+  state.bannerActive=true;
 }
 function clearBanner(){
   els.banner.classList.add('hidden');
-  els.banner.textContent = '';
-  state.bannerActive = false;
+  els.banner.textContent='';
+  state.bannerActive=false;
 }
 
 /* ---------- CSV ---------- */
-function parseCSV(text){
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const hi = lines.findIndex(l => /stock/i.test(l) && /condition/i.test(l));
-  if (hi < 0) return [];
-
-  const headers = lines[hi].split(',').map(h => h.trim());
-
-  return lines.slice(hi+1).map(row => {
-    const v = row.split(',');
-    const o = {};
-    headers.forEach((h,i)=>{
-      const n=h.toLowerCase();
+function parseCSV(t){
+  const l=t.split(/\r?\n/).filter(x=>x.trim());
+  const h=l.findIndex(x=>/stock/i.test(x)&&/condition/i.test(x));
+  if(h<0)return[];
+  const heads=l[h].split(',');
+  return l.slice(h+1).map(r=>{
+    const v=r.split(',');const o={};
+    heads.forEach((x,i)=>{
+      const n=x.toLowerCase();
       if(n.includes('stock'))o.Stock=clean(v[i]);
       if(n.includes('serial'))o.Serial=v[i]?.trim();
       if(n==='make')o.Make=v[i]?.trim();
@@ -96,106 +82,75 @@ function parseCSV(text){
       if(n==='condition')o.Condition=v[i]?.trim();
     });
     return o;
-  }).filter(r => r.Stock);
+  }).filter(r=>r.Stock);
 }
 
-function findDuplicateSerials(rows){
-  const map=new Map();
-  rows.forEach(r=>{
-    if(!r.Serial||!r.Stock)return;
-    if(!map.has(r.Serial))map.set(r.Serial,[]);
-    map.get(r.Serial).push(r.Stock);
-  });
-  return [...map.entries()].filter(([_,s])=>new Set(s).size>1);
-}
-
-const filtered = () =>
-  state.rows.filter(r => (r.Condition||'').toLowerCase() === 'new');
+const filtered=()=>state.rows.filter(r=>(r.Condition||'').toLowerCase()==='new');
 
 /* ---------- UPDATE ---------- */
 function update(){
-  const f = filtered();
-  els.expected.textContent = f.length;
-  els.scanned.textContent = state.scanned.size;
-  els.remaining.textContent = f.length - state.scanned.size;
+  const f=filtered();
+  els.expected.textContent=f.length;
+  els.scanned.textContent=state.scanned.size;
+  els.remaining.textContent=f.length-state.scanned.size;
 }
 
-/* ---------- HANDLE SCAN ---------- */
+/* ---------- SCAN ---------- */
 function handleScan(raw){
-  const code = clean(raw);
-  if(!code) return;
-
-  const row = filtered().find(r => r.Stock === code);
-  if(!row){
-    toast('Not in NEW list', false);
+  const c=clean(raw);
+  if(!c)return;
+  const r=filtered().find(x=>x.Stock===c);
+  if(!r||state.scanned.has(c)){
+    toast('Invalid or duplicate',false);
     return;
   }
-  if(state.scanned.has(code)){
-    toast('Duplicate scan', false);
-    return;
-  }
+  if(state.bannerActive)clearBanner();
 
-  // FIRST VALID SCAN → CLEAR BANNER
-  if(state.bannerActive){
-    clearBanner();
-  }
+  state.scanned.add(c);
 
-  state.scanned.add(code);
-  state.history.unshift(row);
+  els.sdStock.textContent=`STOCK: ${r.Stock}`;
+  els.sdSerial.textContent=`SERIAL: ${r.Serial||'—'}`;
+  els.sdMeta.textContent=
+    `Make: ${r.Make||'—'} · Model: ${r.Model||'—'} · Calibre: ${r.Calibre||'—'}`;
 
-  els.sdStock.textContent  = `STOCK: ${row.Stock}`;
-  els.sdSerial.textContent = `SERIAL: ${row.Serial || '—'}`;
-  els.sdMeta.textContent   =
-    `Make: ${row.Make||'—'} · Model: ${row.Model||'—'} · Calibre: ${row.Calibre||'—'}`;
-
-  toast('Scanned', true);
+  toast('Scanned',true);
   update();
 }
 
-/* ---------- BLUETOOTH SCANNER ---------- */
-let kbBuf='', kbTimer=null;
-document.addEventListener('keydown', e=>{
-  if(e.key.length!==1) return;
-  kbBuf+=e.key;
-  clearTimeout(kbTimer);
-  kbTimer=setTimeout(()=>{
-    handleScan(kbBuf);
-    kbBuf='';
-  },55);
+/* ---------- BLUETOOTH ---------- */
+let buf='',t=null;
+document.addEventListener('keydown',e=>{
+  if(e.key.length!==1)return;
+  buf+=e.key;
+  clearTimeout(t);
+  t=setTimeout(()=>{handleScan(buf);buf='';},55);
 });
 
-/* ---------- CAMERA (WORKING iPHONE PATH) ---------- */
-let reader=null, stream=null;
-let lastCam='', lastTime=0;
-const COOLDOWN=800;
+/* ---------- CAMERA ---------- */
+let reader=null,stream=null,last='',lastT=0;
+const COOL=800;
 
 async function openCamera(){
-  if(!state.rows.length){
-    toast('Upload CSV first', false);
-    return;
-  }
+  if(!state.rows.length){toast('Upload CSV first',false);return;}
 
   els.camModal.style.display='block';
   els.camVideo.setAttribute('playsinline','');
   els.camVideo.muted=true;
   els.camVideo.autoplay=true;
 
-  stream = await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:{ideal:'environment'}},
-    audio:false
+  stream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:{ideal:'environment'}},audio:false
   });
 
   els.camVideo.srcObject=stream;
   await els.camVideo.play();
 
-  reader = new ZXing.BrowserMultiFormatReader();
-
-  reader.decodeFromVideoDevice(null, els.camVideo, result=>{
-    if(!result) return;
-    const txt=result.getText();
-    const now=Date.now();
-    if(txt===lastCam && now-lastTime<COOLDOWN) return;
-    lastCam=txt; lastTime=now;
+  reader=new ZXing.BrowserMultiFormatReader();
+  reader.decodeFromVideoDevice(null,els.camVideo,res=>{
+    if(!res)return;
+    const txt=res.getText(),now=Date.now();
+    if(txt===last&&now-lastT<COOL)return;
+    last=txt;lastT=now;
     handleScan(txt);
   });
 }
@@ -203,32 +158,28 @@ async function openCamera(){
 function closeCamera(){
   try{reader?.reset();}catch{}
   try{stream?.getTracks().forEach(t=>t.stop());}catch{}
-  reader=null; stream=null;
+  reader=null;stream=null;
   els.camModal.style.display='none';
 }
 
-els.camBtn.onclick=openCamera;
+els.camBtn.onclick=()=>{
+  console.log('SCAN BUTTON PRESSED');
+  openCamera();
+};
 els.backMenu.onclick=closeCamera;
 
 /* ---------- FILE LOAD ---------- */
-els.upload.onclick=()=>{els.file.value=''; els.file.click();};
+els.upload.onclick=()=>{els.file.value='';els.file.click();};
 
 els.file.onchange=e=>{
   const f=e.target.files[0];
-  if(!f) return;
+  if(!f)return;
   const r=new FileReader();
   r.onload=()=>{
     state.rows=parseCSV(r.result);
     state.scanned.clear();
     update();
-
-    const dups=findDuplicateSerials(state.rows);
-    if(dups.length){
-      clearBanner();
-      alert('⚠️ DUPLICATE SERIAL NUMBERS FOUND');
-    } else {
-      showBanner('NO DOUBLE BOOKINGS DETECTED');
-    }
+    showBanner('NO DOUBLE BOOKINGS DETECTED');
   };
   r.readAsText(f);
 };
