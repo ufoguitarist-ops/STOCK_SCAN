@@ -1,10 +1,9 @@
 /* ==================================================
-   STOCK SCAN – PREMIUM FEEDBACK (FIXED VISUALS)
+   STOCK SCAN – iPHONE VISUAL FEEDBACK FIXED
    ================================================== */
 
-const STORAGE = 'stockscan_visual_fix_v1';
+const STORAGE = 'stockscan_visual_fixed_v2';
 
-/* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
 const els = {
   upload: $('btnUpload'),
@@ -41,80 +40,92 @@ let state = {
   startTime: null
 };
 
-/* ---------- HELPERS ---------- */
 const norm = v => String(v ?? '').trim().toLowerCase();
 
-/* ---------- FEEDBACK (JS ONLY – NO CSS DEPENDENCY) ---------- */
-function strongVisualFeedback() {
-  /* full-screen green flash */
+/* ---------- GUARANTEED VISUAL FEEDBACK ---------- */
+function showScanFeedback(){
+  // green flash
   const flash = document.createElement('div');
-  flash.style.position = 'fixed';
-  flash.style.inset = '0';
-  flash.style.background = 'rgba(40,220,120,0.35)';
-  flash.style.zIndex = '99998';
-  flash.style.pointerEvents = 'none';
+  flash.style.cssText = `
+    position:fixed;
+    inset:0;
+    background:rgba(40,220,120,.38);
+    z-index:2147483646;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .12s ease;
+  `;
   document.body.appendChild(flash);
 
-  /* big tick */
+  // big tick
   const tick = document.createElement('div');
   tick.textContent = '✔';
-  tick.style.position = 'fixed';
-  tick.style.inset = '0';
-  tick.style.display = 'grid';
-  tick.style.placeItems = 'center';
-  tick.style.fontSize = '110px';
-  tick.style.fontWeight = '900';
-  tick.style.color = '#3cff8f';
-  tick.style.zIndex = '99999';
-  tick.style.transform = 'scale(0.6)';
-  tick.style.opacity = '0';
-  tick.style.transition = 'all 0.15s ease';
-
+  tick.style.cssText = `
+    position:fixed;
+    inset:0;
+    display:grid;
+    place-items:center;
+    font-size:110px;
+    font-weight:900;
+    color:#3cff8f;
+    z-index:2147483647;
+    pointer-events:none;
+    transform:scale(.6);
+    opacity:0;
+    transition:all .16s ease;
+  `;
   document.body.appendChild(tick);
 
+  // FORCE SAFARI REFLOW (this is the key)
+  flash.offsetHeight;
+  tick.offsetHeight;
+
   requestAnimationFrame(() => {
-    tick.style.transform = 'scale(1)';
+    flash.style.opacity = '1';
     tick.style.opacity = '1';
+    tick.style.transform = 'scale(1)';
   });
 
-  /* strong iPhone vibration (if allowed) */
   if (navigator.vibrate) {
-    navigator.vibrate([30, 20, 30, 20, 30, 60]);
+    navigator.vibrate([30,20,30,20,30,60]);
   }
 
   setTimeout(() => {
-    flash.remove();
-    tick.remove();
-  }, 300);
+    flash.style.opacity = '0';
+    tick.style.opacity = '0';
+    setTimeout(() => {
+      flash.remove();
+      tick.remove();
+    }, 120);
+  }, 260);
 }
 
 /* ---------- TOAST ---------- */
-function toast(msg, ok = true) {
+function toast(msg, ok=true){
   els.toast.textContent = msg;
-  els.toast.className = 'toast ' + (ok ? 'good' : 'bad');
-  setTimeout(() => els.toast.textContent = '', 900);
+  els.toast.className = 'toast ' + (ok?'good':'bad');
+  setTimeout(()=>els.toast.textContent='',900);
 }
 
 /* ---------- STORAGE ---------- */
-function save() {
+function save(){
   localStorage.setItem(STORAGE, JSON.stringify({
     rows: state.rows,
-    scanned: [...state.scanned],
+    scanned:[...state.scanned],
     make: state.make,
     model: state.model,
     last: state.last,
     startTime: state.startTime
   }));
 }
-
-function load() {
-  const s = JSON.parse(localStorage.getItem(STORAGE) || '{}');
-  state.rows = s.rows || [];
-  state.scanned = new Set(s.scanned || []);
-  state.make = s.make || '';
-  state.model = s.model || '';
-  state.last = s.last || '';
-  state.startTime = s.startTime || null;
+function load(){
+  const s=JSON.parse(localStorage.getItem(STORAGE)||'{}');
+  state.rows=s.rows||[];
+  state.scanned=new Set(s.scanned||[]);
+  state.make=s.make||'';
+  state.model=s.model||'';
+  state.last=s.last||'';
+  state.startTime=s.startTime||null;
 }
 
 /* ---------- CSV ---------- */
@@ -213,7 +224,7 @@ function handleScan(code){
   state.scanned.add(c);
   state.last=c;
 
-  strongVisualFeedback();   // <<< GREEN FLASH + TICK (FIXED)
+  showScanFeedback();   // <<< NOW GUARANTEED
   toast('Scanned',true);
   update();
 }
