@@ -1,17 +1,68 @@
-body{
-  background:#020617;
-  color:white;
-  font-family:-apple-system,system-ui;
-  padding:20px;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Stock Scan</title>
+
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+</head>
+<body>
+
+<script>
+if(localStorage.getItem('logged')!=='yes'){
+  location.replace('login.html');
 }
-button{
-  padding:12px;
-  margin:6px 0;
-  width:100%;
-  font-size:16px;
-}
-video{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
+</script>
+
+<header>
+  <h1>STOCK SCAN</h1>
+  <p id="heroSub">Inventory Scanner</p>
+</header>
+
+<div id="statusBanner" class="status-banner hidden"></div>
+
+<section class="controls">
+  <button id="btnUpload">Upload CSV</button>
+  <button id="btnCamera">Scan</button>
+</section>
+
+<section class="controls">
+  <button id="btnReset">Reset Scan</button>
+  <button id="btnClear">Clear CSV</button>
+</section>
+
+<section class="controls">
+  <button id="btnExportScanned">Export Scanned</button>
+  <button id="btnExportMissing">Export Missing</button>
+</section>
+
+<input id="fileInput" type="file" accept=".csv" hidden>
+
+<section class="stats">
+  <div class="stat"><span>Expected</span><strong id="expected">0</strong></div>
+  <div class="stat"><span>Scanned</span><strong id="scanned">0</strong></div>
+  <div class="stat"><span>Remaining</span><strong id="remaining">0</strong></div>
+</section>
+
+<section class="scan-details">
+  <div class="sd-stock">STOCK: —</div>
+  <div class="sd-serial">SERIAL: —</div>
+  <div class="sd-meta">Make · Model · Calibre</div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<div id="flash" class="flash"></div>
+
+<div id="camModal" class="cam-modal">
+  <video id="camVideo" playsinline></video>
+  <div class="cam-controls">
+    <button id="btnBack">⬅ Back</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
