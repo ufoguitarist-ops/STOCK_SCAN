@@ -1,1 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>STOCK SCAN</title>
 
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+</head>
+<body>
+
+<header>
+  <h1 id="heroTitle">STOCK SCAN</h1>
+  <p id="heroSub">Upload CSV to begin</p>
+</header>
+
+<section class="controls">
+  <button id="btnUpload">Upload CSV</button>
+  <button id="btnCamera">📷 Scan</button>
+  <input id="fileInput" type="file" accept=".csv" hidden />
+</section>
+
+<section class="filters">
+  <select id="makeFilter">
+    <option value="">All Makes</option>
+  </select>
+  <select id="modelFilter">
+    <option value="">All Models</option>
+  </select>
+</section>
+
+<section class="stats">
+  <div class="stat">
+    <span>Expected</span>
+    <strong id="expected">0</strong>
+  </div>
+  <div class="stat">
+    <span>Scanned</span>
+    <strong id="scanned">0</strong>
+  </div>
+  <div class="stat">
+    <span>Remaining</span>
+    <strong id="remaining">0</strong>
+  </div>
+</section>
+
+<div class="ring-wrap">
+  <div class="ring" id="ring">
+    <span id="pct">0%</span>
+  </div>
+</div>
+
+<section id="scanDetails" class="scan-details">
+  <div class="sd-stock">STOCK: —</div>
+  <div class="sd-serial">SERIAL: —</div>
+  <div class="sd-meta">Make: — · Model: — · Calibre: —</div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<!-- Camera Modal -->
+<div id="camModal" class="cam-modal">
+  <div class="cam-box">
+    <video id="camVideo" playsinline></video>
+    <p id="camHint">Scan barcode</p>
+    <button id="btnCamClose">Close</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
