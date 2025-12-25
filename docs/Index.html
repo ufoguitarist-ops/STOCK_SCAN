@@ -1,1 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b12" />
+  <title>Stock Scan</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bgGlow"></div>
 
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logoDot"></div>
+        <div>
+          <div class="title">Stock Scan</div>
+          <div class="subtitle">Bluetooth-first • Camera backup • NEW only</div>
+        </div>
+      </div>
+
+      <div class="topActions">
+        <button class="btn primary" id="btnUpload">Upload CSV</button>
+        <input id="fileInput" type="file" accept=".csv,text/csv" hidden />
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT: filters + counters -->
+      <section class="panel left">
+        <div class="sectionHead">
+          <div class="h">Filters</div>
+          <div class="pill" id="pillState">No file loaded</div>
+        </div>
+
+        <div class="grid2">
+          <label class="field">
+            <span>Make</span>
+            <select id="makeFilter">
+              <option value="">All</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Model</span>
+            <select id="modelFilter">
+              <option value="">All</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <div class="pill lock">Condition: <b>NEW</b></div>
+          <button class="btn subtle" id="btnReset" title="Clear scans (keeps CSV)">Reset Scans</button>
+        </div>
+
+        <div class="cards">
+          <div class="card">
+            <div class="k">Expected</div>
+            <div class="v" id="expected">0</div>
+          </div>
+          <div class="card">
+            <div class="k">Scanned</div>
+            <div class="v good" id="scanned">0</div>
+          </div>
+          <div class="card">
+            <div class="k">Remaining</div>
+            <div class="v" id="remaining">0</div>
+          </div>
+        </div>
+
+        <div class="hint">
+          <b>Bluetooth scanner:</b> just scan — no Enter needed.<br/>
+          <b>Camera:</b> tap the camera button and scan.<br/>
+          <b>Duplicates:</b> ignored automatically.
+        </div>
+      </section>
+
+      <!-- RIGHT: scan focus -->
+      <section class="panel right">
+        <div class="scanHero">
+          <div class="heroTop">
+            <div class="heroTitle" id="heroTitle">Upload your CSV to begin</div>
+            <div class="heroSub" id="heroSub">We’ll auto-detect the header row (no deleting extra rows). Then start scanning.</div>
+          </div>
+
+          <div class="ring" id="ring" style="--p:0;">
+            <div class="ringInner">
+              <div class="pct" id="pct">0%</div>
+              <div class="pctLabel">Complete</div>
+            </div>
+          </div>
+
+          <div class="last">
+            <div class="lastLabel">Last scan</div>
+            <div class="lastCode" id="lastCode">—</div>
+            <div class="toast" id="toast" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- floating camera -->
+    <button class="fab" id="btnCamera" title="Scan with camera">📷</button>
+
+    <!-- camera modal -->
+    <div class="modal" id="camModal" aria-hidden="true">
+      <div class="modalCard">
+        <div class="modalTop">
+          <div class="modalTitle">Scan with Camera</div>
+          <button class="btn subtle" id="btnCamClose">Close</button>
+        </div>
+        <div class="modalBody">
+          <video id="camVideo" playsinline></video>
+          <div class="modalHint" id="camHint">Point at the barcode. It will scan automatically.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
