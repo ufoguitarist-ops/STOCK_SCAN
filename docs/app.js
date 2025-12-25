@@ -1,14 +1,17 @@
 /* ==================================================
-   STOCK SCAN – FINAL COMPLETE BUILD
+   STOCK SCAN – FINAL POLISHED BUILD
    ================================================== */
 
-const STORAGE = 'stockscan_final_full_v1';
+const STORAGE = 'stockscan_persist_csv_v1';
 
 /* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
 const els = {
   upload: $('btnUpload'),
+  resetScan: $('btnResetScan'),
+  clearCSV: $('btnClearCSV'),
   file: $('fileInput'),
+
   make: $('makeFilter'),
   model: $('modelFilter'),
 
@@ -28,7 +31,6 @@ const els = {
   camModal: $('camModal'),
   camClose: $('btnCamClose'),
   camVideo: $('camVideo'),
-  camHint: $('camHint'),
 };
 
 /* ---------- STATE ---------- */
@@ -36,38 +38,37 @@ let state = {
   rows: [],
   scanned: new Set(),
   make: '',
-  model: '',
-  startTime: null
+  model: ''
 };
 
 const norm = v => String(v ?? '').trim().toLowerCase();
 
-/* ---------- VISUAL FEEDBACK ---------- */
-function scanFlash() {
-  const flash = document.createElement('div');
-  flash.style.cssText = `
-    position:fixed; inset:0;
-    background:rgba(40,220,120,.35);
-    z-index:9998;
-  `;
-  const tick = document.createElement('div');
-  tick.textContent = '✔';
-  tick.style.cssText = `
-    position:fixed; inset:0;
-    display:grid; place-items:center;
-    font-size:110px; font-weight:900;
-    color:#3cff8f;
-    z-index:9999;
-  `;
-  document.body.appendChild(flash);
-  document.body.appendChild(tick);
+/* ---------- PERSISTENCE ---------- */
+function save() {
+  localStorage.setItem(STORAGE, JSON.stringify({
+    rows: state.rows,
+    scanned: [...state.scanned]
+  }));
+}
 
-  if (navigator.vibrate) navigator.vibrate([30,20,30,20,30,60]);
+function load() {
+  const s = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+  state.rows = s.rows || [];
+  state.scanned = new Set(s.scanned || []);
+}
 
-  setTimeout(() => {
-    flash.remove();
-    tick.remove();
-  }, 300);
+/* ---------- GREEN FLASH (GUARANTEED) ---------- */
+function flashGreen() {
+  const f = document.createElement('div');
+  f.style.cssText = `
+    position:fixed; inset:0;
+    background:rgba(40,220,120,.4);
+    z-index:99999;
+    pointer-events:none;
+  `;
+  document.body.appendChild(f);
+  f.offsetHeight; // force paint
+  setTimeout(() => f.remove(), 200);
 }
 
 /* ---------- TOAST ---------- */
@@ -80,9 +81,9 @@ function toast(msg, ok=true){
 /* ---------- CSV ---------- */
 function splitCSV(line){
   const out=[], cur=[]; let q=false;
-  for(let c of line){
+  for(const c of line){
     if(c==='"'){q=!q; continue;}
-    if(c===',' && !q){ out.push(cur.join('')); cur.length=0; continue; }
+    if(c===','&&!q){out.push(cur.join('')); cur.length=0; continue;}
     cur.push(c);
   }
   out.push(cur.join(''));
@@ -115,8 +116,7 @@ function parseCSV(text){
   });
 
   return lines.slice(h+1).map(l=>{
-    const v=splitCSV(l);
-    const o={};
+    const v=splitCSV(l), o={};
     headers.forEach((h,i)=>o[h]=(v[i]||'').trim());
     return o;
   }).filter(r=>r.Stock);
@@ -131,7 +131,7 @@ function filtered(){
   );
 }
 
-/* ---------- UPDATE UI ---------- */
+/* ---------- UPDATE ---------- */
 function update(){
   const f=filtered();
   const s=f.filter(r=>state.scanned.has(r.Stock)).length;
@@ -157,13 +157,14 @@ function handleScan(code){
   state.scanned.add(c);
 
   els.sdStock.textContent = `STOCK: ${row.Stock}`;
-  els.sdSerial.textContent = `SERIAL: ${row.Serial || '—'}`;
+  els.sdSerial.textContent = `SERIAL: ${row.Serial||'—'}`;
   els.sdMeta.textContent =
     `Make: ${row.Make||'—'} · Model: ${row.Model||'—'} · Calibre: ${row.Calibre||'—'}`;
 
-  scanFlash();
+  flashGreen();
   toast('Scanned',true);
   update();
+  save();
 }
 
 /* ---------- BLUETOOTH ---------- */
@@ -202,8 +203,28 @@ els.camClose.onclick=()=>{
   els.camModal.style.display='none';
 };
 
-/* ---------- CSV LOAD ---------- */
+/* ---------- BUTTONS ---------- */
 els.upload.onclick=()=>{els.file.value='';els.file.click();};
+
+els.resetScan.onclick=()=>{
+  state.scanned.clear();
+  toast('Scan reset',true);
+  update();
+  save();
+};
+
+els.clearCSV.onclick=()=>{
+  state.rows=[];
+  state.scanned.clear();
+  localStorage.removeItem(STORAGE);
+  els.sdStock.textContent='STOCK: —';
+  els.sdSerial.textContent='SERIAL: —';
+  els.sdMeta.textContent='Make: — · Model: — · Calibre: —';
+  update();
+  toast('CSV cleared',true);
+};
+
+/* ---------- CSV LOAD ---------- */
 els.file.onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
@@ -217,6 +238,7 @@ els.file.onchange=e=>{
       [...new Set(state.rows.map(r=>r.Model).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
 
     update();
+    save();
     toast('CSV loaded',true);
   };
   r.readAsText(f);
@@ -224,3 +246,7 @@ els.file.onchange=e=>{
 
 els.make.onchange=()=>{state.make=els.make.value;update();};
 els.model.onchange=()=>{state.model=els.model.value;update();};
+
+/* ---------- INIT ---------- */
+load();
+update();
