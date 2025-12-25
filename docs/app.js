@@ -1,26 +1,27 @@
 /* ==================================================
-   STOCK SCAN – iPHONE VISUAL FEEDBACK FIXED
+   STOCK SCAN – FINAL COMPLETE BUILD
    ================================================== */
 
-const STORAGE = 'stockscan_visual_fixed_v2';
+const STORAGE = 'stockscan_final_full_v1';
 
+/* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
 const els = {
   upload: $('btnUpload'),
   file: $('fileInput'),
   make: $('makeFilter'),
   model: $('modelFilter'),
-  reset: $('btnReset'),
 
   expected: $('expected'),
   scanned: $('scanned'),
   remaining: $('remaining'),
-  pct: $('pct'),
   ring: $('ring'),
+  pct: $('pct'),
 
-  heroTitle: $('heroTitle'),
-  heroSub: $('heroSub'),
-  lastCode: $('lastCode'),
+  sdStock: document.querySelector('.sd-stock'),
+  sdSerial: document.querySelector('.sd-serial'),
+  sdMeta: document.querySelector('.sd-meta'),
+
   toast: $('toast'),
 
   camBtn: $('btnCamera'),
@@ -36,109 +37,58 @@ let state = {
   scanned: new Set(),
   make: '',
   model: '',
-  last: '',
   startTime: null
 };
 
 const norm = v => String(v ?? '').trim().toLowerCase();
 
-/* ---------- GUARANTEED VISUAL FEEDBACK ---------- */
-function showScanFeedback(){
-  // green flash
+/* ---------- VISUAL FEEDBACK ---------- */
+function scanFlash() {
   const flash = document.createElement('div');
   flash.style.cssText = `
-    position:fixed;
-    inset:0;
-    background:rgba(40,220,120,.38);
-    z-index:2147483646;
-    pointer-events:none;
-    opacity:0;
-    transition:opacity .12s ease;
+    position:fixed; inset:0;
+    background:rgba(40,220,120,.35);
+    z-index:9998;
   `;
-  document.body.appendChild(flash);
-
-  // big tick
   const tick = document.createElement('div');
   tick.textContent = '✔';
   tick.style.cssText = `
-    position:fixed;
-    inset:0;
-    display:grid;
-    place-items:center;
-    font-size:110px;
-    font-weight:900;
+    position:fixed; inset:0;
+    display:grid; place-items:center;
+    font-size:110px; font-weight:900;
     color:#3cff8f;
-    z-index:2147483647;
-    pointer-events:none;
-    transform:scale(.6);
-    opacity:0;
-    transition:all .16s ease;
+    z-index:9999;
   `;
+  document.body.appendChild(flash);
   document.body.appendChild(tick);
 
-  // FORCE SAFARI REFLOW (this is the key)
-  flash.offsetHeight;
-  tick.offsetHeight;
-
-  requestAnimationFrame(() => {
-    flash.style.opacity = '1';
-    tick.style.opacity = '1';
-    tick.style.transform = 'scale(1)';
-  });
-
-  if (navigator.vibrate) {
-    navigator.vibrate([30,20,30,20,30,60]);
-  }
+  if (navigator.vibrate) navigator.vibrate([30,20,30,20,30,60]);
 
   setTimeout(() => {
-    flash.style.opacity = '0';
-    tick.style.opacity = '0';
-    setTimeout(() => {
-      flash.remove();
-      tick.remove();
-    }, 120);
-  }, 260);
+    flash.remove();
+    tick.remove();
+  }, 300);
 }
 
 /* ---------- TOAST ---------- */
 function toast(msg, ok=true){
   els.toast.textContent = msg;
   els.toast.className = 'toast ' + (ok?'good':'bad');
-  setTimeout(()=>els.toast.textContent='',900);
-}
-
-/* ---------- STORAGE ---------- */
-function save(){
-  localStorage.setItem(STORAGE, JSON.stringify({
-    rows: state.rows,
-    scanned:[...state.scanned],
-    make: state.make,
-    model: state.model,
-    last: state.last,
-    startTime: state.startTime
-  }));
-}
-function load(){
-  const s=JSON.parse(localStorage.getItem(STORAGE)||'{}');
-  state.rows=s.rows||[];
-  state.scanned=new Set(s.scanned||[]);
-  state.make=s.make||'';
-  state.model=s.model||'';
-  state.last=s.last||'';
-  state.startTime=s.startTime||null;
+  setTimeout(()=>els.toast.className='toast',900);
 }
 
 /* ---------- CSV ---------- */
-function splitCSV(l){
-  const o=[],c=[];let q=false;
-  for(let i=0;i<l.length;i++){
-    const ch=l[i];
-    if(ch==='"'){q=!q;continue;}
-    if(ch===','&&!q){o.push(c.join(''));c.length=0;continue;}
-    c.push(ch);
+function splitCSV(line){
+  const out=[], cur=[]; let q=false;
+  for(let c of line){
+    if(c==='"'){q=!q; continue;}
+    if(c===',' && !q){ out.push(cur.join('')); cur.length=0; continue; }
+    cur.push(c);
   }
-  o.push(c.join(''));return o;
+  out.push(cur.join(''));
+  return out;
 }
+
 function findHeader(lines){
   const need=[['stock'],['make'],['model'],['condition']];
   for(let i=0;i<lines.length;i++){
@@ -147,20 +97,27 @@ function findHeader(lines){
   }
   return -1;
 }
-function parseCSV(t){
-  const lines=t.split(/\r?\n/).filter(l=>l.trim());
-  const h=findHeader(lines); if(h<0) return [];
-  const heads=splitCSV(lines[h]).map(h=>{
+
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  const h=findHeader(lines);
+  if(h<0) return [];
+
+  const headers=splitCSV(lines[h]).map(h=>{
     const n=norm(h);
-    if(n.includes('stock'))return'Stock';
-    if(n==='make')return'Make';
-    if(n==='model')return'Model';
-    if(n==='condition')return'Condition';
+    if(n.includes('stock')) return 'Stock';
+    if(n.includes('serial')) return 'Serial';
+    if(n==='make') return 'Make';
+    if(n==='model') return 'Model';
+    if(n.includes('cal')) return 'Calibre';
+    if(n==='condition') return 'Condition';
     return h;
   });
+
   return lines.slice(h+1).map(l=>{
-    const v=splitCSV(l),o={};
-    heads.forEach((h,i)=>o[h]=(v[i]||'').trim());
+    const v=splitCSV(l);
+    const o={};
+    headers.forEach((h,i)=>o[h]=(v[i]||'').trim());
     return o;
   }).filter(r=>r.Stock);
 }
@@ -169,22 +126,13 @@ function parseCSV(t){
 function filtered(){
   return state.rows.filter(r =>
     norm(r.Condition)==='new' &&
-    (!state.make||r.Make===state.make) &&
-    (!state.model||r.Model===state.model)
+    (!state.make || r.Make===state.make) &&
+    (!state.model || r.Model===state.model)
   );
 }
 
-/* ---------- UI ---------- */
+/* ---------- UPDATE UI ---------- */
 function update(){
-  if(!state.rows.length){
-    els.heroTitle.textContent='Upload your CSV';
-    els.heroSub.textContent='Header auto-detected';
-    els.expected.textContent=els.scanned.textContent=els.remaining.textContent='0';
-    els.pct.textContent='0%';
-    els.ring.style.setProperty('--p',0);
-    save();return;
-  }
-
   const f=filtered();
   const s=f.filter(r=>state.scanned.has(r.Stock)).length;
   const r=f.length-s;
@@ -195,17 +143,6 @@ function update(){
   els.remaining.textContent=r;
   els.pct.textContent=p+'%';
   els.ring.style.setProperty('--p',p);
-  els.lastCode.textContent=state.last||'—';
-
-  if(state.startTime){
-    const mins=(Date.now()-state.startTime)/60000;
-    const rate=Math.round(s/Math.max(mins,0.1));
-    els.heroSub.textContent=`Scanning • ${rate} items/min`;
-  }else{
-    els.heroSub.textContent='Ready to scan';
-  }
-
-  save();
 }
 
 /* ---------- SCAN ---------- */
@@ -213,18 +150,18 @@ function handleScan(code){
   const c=String(code||'').trim();
   if(!c) return;
 
-  if(!filtered().some(r=>r.Stock===c)){
-    toast('Not in NEW list',false);return;
-  }
-  if(state.scanned.has(c)){
-    toast('Duplicate',false);return;
-  }
+  const row=filtered().find(r=>r.Stock===c);
+  if(!row){ toast('Not in NEW list',false); return; }
+  if(state.scanned.has(c)){ toast('Duplicate',false); return; }
 
-  if(!state.startTime) state.startTime=Date.now();
   state.scanned.add(c);
-  state.last=c;
 
-  showScanFeedback();   // <<< NOW GUARANTEED
+  els.sdStock.textContent = `STOCK: ${row.Stock}`;
+  els.sdSerial.textContent = `SERIAL: ${row.Serial || '—'}`;
+  els.sdMeta.textContent =
+    `Make: ${row.Make||'—'} · Model: ${row.Model||'—'} · Calibre: ${row.Calibre||'—'}`;
+
+  scanFlash();
   toast('Scanned',true);
   update();
 }
@@ -245,50 +182,45 @@ const COOLDOWN=800;
 async function openCam(){
   if(!state.rows.length){toast('Upload CSV first',false);return;}
   els.camModal.style.display='block';
-  try{
-    reader=new ZXing.BrowserMultiFormatReader();
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    els.camVideo.srcObject=stream;
-    await els.camVideo.play();
-    reader.decodeFromVideoDevice(null,els.camVideo,res=>{
-      if(!res)return;
-      const c=res.getText(),n=Date.now();
-      if(c===lastCam&&n-lastTime<COOLDOWN)return;
-      lastCam=c;lastTime=n;
-      handleScan(c);
-    });
-  }catch{els.camHint.textContent='Camera blocked';}
-}
-function closeCam(){
-  try{reader?.reset();stream?.getTracks().forEach(t=>t.stop());}catch{}
-  reader=null;stream=null;els.camModal.style.display='none';
+  reader=new ZXing.BrowserMultiFormatReader();
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  els.camVideo.srcObject=stream;
+  await els.camVideo.play();
+  reader.decodeFromVideoDevice(null,els.camVideo,res=>{
+    if(!res)return;
+    const c=res.getText(),n=Date.now();
+    if(c===lastCam&&n-lastTime<COOLDOWN)return;
+    lastCam=c; lastTime=n;
+    handleScan(c);
+  });
 }
 
-/* ---------- EVENTS ---------- */
 els.camBtn.onclick=openCam;
-els.camClose.onclick=closeCam;
-els.camModal.onclick=e=>{if(e.target===els.camModal)closeCam();};
-els.upload.onclick=()=>{els.file.value='';els.file.click();};
+els.camClose.onclick=()=>{
+  reader?.reset();
+  stream?.getTracks().forEach(t=>t.stop());
+  els.camModal.style.display='none';
+};
 
+/* ---------- CSV LOAD ---------- */
+els.upload.onclick=()=>{els.file.value='';els.file.click();};
 els.file.onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
   r.onload=()=>{
     state.rows=parseCSV(r.result);
     state.scanned.clear();
-    state.make='';state.model='';state.last='';state.startTime=null;
+
     els.make.innerHTML='<option value="">All</option>'+
-      [...new Set(state.rows.map(r=>r.Make).filter(Boolean))].sort().map(m=>`<option>${m}</option>`).join('');
+      [...new Set(state.rows.map(r=>r.Make).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
     els.model.innerHTML='<option value="">All</option>'+
-      [...new Set(state.rows.map(r=>r.Model).filter(Boolean))].sort().map(m=>`<option>${m}</option>`).join('');
-    update();toast('CSV loaded',true);
+      [...new Set(state.rows.map(r=>r.Model).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
+
+    update();
+    toast('CSV loaded',true);
   };
   r.readAsText(f);
 };
 
 els.make.onchange=()=>{state.make=els.make.value;update();};
 els.model.onchange=()=>{state.model=els.model.value;update();};
-els.reset.onclick=()=>{state.scanned.clear();state.startTime=null;update();};
-
-/* ---------- INIT ---------- */
-load();update();
