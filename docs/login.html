@@ -1,42 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Login – Stock Scan</title>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css">
 </head>
+<body>
 
-<body class="login-page">
-
-<div class="login-box">
+<header>
   <h1>STOCK SCAN</h1>
-  <p class="login-sub">Please sign in</p>
+  <p id="heroSub">Secure Login</p>
+</header>
 
-  <input id="user" placeholder="Username" autocomplete="off" />
-  <input id="pass" type="password" placeholder="Password" />
+<section class="scan-details">
+  <input id="user" placeholder="Username" autocomplete="off">
+  <input id="pass" placeholder="Password" type="password">
+  <button id="loginBtn">Login</button>
+</section>
 
-  <button id="btnLogin">Login</button>
-
-  <p class="login-hint">Authorised use only</p>
-</div>
+<div id="toast" class="toast"></div>
 
 <script>
-const USER = 'admin';
-const PASS = '1234';
-
-document.getElementById('btnLogin').onclick = () => {
-  const u = document.getElementById('user').value.trim();
-  const p = document.getElementById('pass').value.trim();
-
-  if (u === USER && p === PASS) {
-    localStorage.setItem('stockscan_logged_in', 'yes');
-    location.href = 'index.html';
+const $=id=>document.getElementById(id);
+$('loginBtn').onclick=()=>{
+  if($('user').value==='admin' && $('pass').value==='1234'){
+    localStorage.setItem('stockscan_logged_in','yes');
+    location.href='index.html';
   } else {
-    alert('Invalid login');
+    $('toast').textContent='Invalid login';
+    $('toast').className='toast bad';
+    setTimeout(()=>$('toast').className='toast',900);
   }
 };
 </script>
-
 </body>
 </html>
