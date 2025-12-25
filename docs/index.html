@@ -17,7 +17,20 @@
 
 <section class="controls">
   <button id="btnUpload">Upload CSV</button>
-  <button id="btnCamera">📷 Scan</button>
+
+  <!-- MODERN SCAN BUTTON -->
+  <button id="btnCamera" aria-label="Scan">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg"
+         style="vertical-align:-4px;margin-right:8px">
+      <path d="M4 7V5a2 2 0 0 1 2-2h2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <path d="M20 7V5a2 2 0 0 0-2-2h-2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <path d="M4 17v2a2 2 0 0 0 2 2h2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <path d="M20 17v2a2 2 0 0 1-2 2h-2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="6" y1="12" x2="18" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    Scan
+  </button>
 </section>
 
 <section class="controls">
@@ -31,15 +44,6 @@
 </section>
 
 <input id="fileInput" type="file" accept=".csv" hidden />
-
-<section class="filters">
-  <select id="makeFilter">
-    <option value="">All Makes</option>
-  </select>
-  <select id="modelFilter">
-    <option value="">All Models</option>
-  </select>
-</section>
 
 <section class="stats">
   <div class="stat"><span>Expected</span><strong id="expected">0</strong></div>
@@ -67,7 +71,6 @@
 <!-- CAMERA MODAL -->
 <div id="camModal" class="cam-modal">
   <video id="camVideo" playsinline></video>
-
   <div class="cam-controls">
     <button id="btnBackMenu" class="secondary">⬅ Back to Menu</button>
   </div>
