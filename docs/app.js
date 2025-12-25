@@ -2,7 +2,7 @@
    STOCK SCAN – CAMERA-FIRST + STRONG FEEDBACK
    ================================================== */
 
-const STORAGE = 'stockscan_camera_primary_v2';
+const STORAGE = 'stockscan_camera_primary_v3';
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -44,6 +44,28 @@ let state = {
 /* ---------- helpers ---------- */
 const norm = v => String(v ?? '').trim().toLowerCase();
 
+/* ---------- LOUD BEEP (iOS SAFE) ---------- */
+let audioCtx = null;
+function playBeep() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'square';           // harsher = more noticeable
+    osc.frequency.value = 1800;    // high pitch
+    gain.gain.value = 0.35;        // loud but safe
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.12);
+  } catch {}
+}
+
 function toast(msg, ok = true){
   els.toast.textContent = msg;
   els.toast.className = 'toast ' + (ok ? 'good' : 'bad');
@@ -58,11 +80,11 @@ function successFlash(){
   const flash = document.createElement('div');
   flash.style.position = 'fixed';
   flash.style.inset = '0';
-  flash.style.background = 'rgba(40, 220, 120, 0.25)';
+  flash.style.background = 'rgba(40, 220, 120, 0.28)';
   flash.style.zIndex = '99999';
   flash.style.display = 'grid';
   flash.style.placeItems = 'center';
-  flash.style.fontSize = '48px';
+  flash.style.fontSize = '52px';
   flash.style.fontWeight = '900';
   flash.style.color = '#ffffff';
   flash.style.backdropFilter = 'blur(2px)';
@@ -70,8 +92,8 @@ function successFlash(){
 
   document.body.appendChild(flash);
 
-  // iOS haptic
-  if (navigator.vibrate) navigator.vibrate(40);
+  if (navigator.vibrate) navigator.vibrate(50);
+  playBeep();                      // <<< LOUD BEEP HERE
 
   setTimeout(() => flash.remove(), 220);
 }
@@ -195,7 +217,7 @@ function handleScan(code){
   state.scanned.add(c);
   state.last=c;
 
-  successFlash();          // <<< STRONG SUCCESS SIGNAL
+  successFlash();
   toast('Scanned',true);
   update();
 }
