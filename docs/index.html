@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>STOCK SCAN</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>STOCK SCAN</title>
 
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<link rel="stylesheet" href="style.css" />
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 </head>
 <body>
 
 <header>
-  <h1 id="heroTitle">STOCK SCAN</h1>
+  <h1>STOCK SCAN</h1>
   <p id="heroSub">Upload CSV to begin</p>
 </header>
 
@@ -25,53 +25,44 @@
   <button id="btnClearCSV" class="danger">Clear CSV</button>
 </section>
 
+<section class="controls">
+  <button id="btnExportScanned">Export Scanned</button>
+  <button id="btnExportMissing">Export Missing</button>
+</section>
+
 <input id="fileInput" type="file" accept=".csv" hidden />
 
 <section class="filters">
-  <select id="makeFilter">
-    <option value="">All Makes</option>
-  </select>
-  <select id="modelFilter">
-    <option value="">All Models</option>
-  </select>
+  <select id="makeFilter"></select>
+  <select id="modelFilter"></select>
 </section>
 
 <section class="stats">
-  <div class="stat">
-    <span>Expected</span>
-    <strong id="expected">0</strong>
-  </div>
-  <div class="stat">
-    <span>Scanned</span>
-    <strong id="scanned">0</strong>
-  </div>
-  <div class="stat">
-    <span>Remaining</span>
-    <strong id="remaining">0</strong>
-  </div>
+  <div><span>Expected</span><strong id="expected">0</strong></div>
+  <div><span>Scanned</span><strong id="scanned">0</strong></div>
+  <div><span>Remaining</span><strong id="remaining">0</strong></div>
 </section>
 
 <div class="ring-wrap">
-  <div class="ring" id="ring">
-    <span id="pct">0%</span>
-  </div>
+  <div class="ring" id="ring"><span id="pct">0%</span></div>
 </div>
 
-<section id="scanDetails" class="scan-details">
+<section class="scan-details">
   <div class="sd-stock">STOCK: —</div>
   <div class="sd-serial">SERIAL: —</div>
   <div class="sd-meta">Make: — · Model: — · Calibre: —</div>
 </section>
 
+<section class="history">
+  <h3>Last scanned</h3>
+  <ul id="history"></ul>
+</section>
+
 <div id="toast" class="toast"></div>
 
-<!-- Camera Modal -->
 <div id="camModal" class="cam-modal">
-  <div class="cam-box">
-    <video id="camVideo" playsinline></video>
-    <p id="camHint">Scan barcode</p>
-    <button id="btnCamClose">Close</button>
-  </div>
+  <video id="camVideo" playsinline></video>
+  <button id="btnCamClose">Close</button>
 </div>
 
 <script src="app.js"></script>
