@@ -1,8 +1,8 @@
 /* ==================================================
-   STOCK SCAN – FINAL iOS-SAFE AUDIO VERSION
+   STOCK SCAN – FINAL STABLE (STRONG FEEDBACK)
    ================================================== */
 
-const STORAGE = 'stockscan_camera_primary_v5';
+const STORAGE = 'stockscan_final_strong_v1';
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -33,6 +33,7 @@ const els = {
   camHint: $('camHint'),
 };
 
+/* ---------- STATE ---------- */
 let state = {
   rows: [],
   scanned: new Set(),
@@ -41,7 +42,10 @@ let state = {
   last: ''
 };
 
-/* ---------- AUDIO (MAXIMUM POSSIBLE ON iOS WEB) ---------- */
+/* ---------- HELPERS ---------- */
+const norm = v => String(v ?? '').trim().toLowerCase();
+
+/* ---------- AUDIO (iOS SAFE) ---------- */
 let audioCtx = null;
 let audioUnlocked = false;
 
@@ -57,20 +61,16 @@ function unlockAudio(){
 
 function playBeep(){
   if (!audioUnlocked || !audioCtx) return;
-
   try{
-    // two oscillators = louder / more noticeable
     const osc1 = audioCtx.createOscillator();
     const osc2 = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
     osc1.type = 'square';
     osc2.type = 'square';
-
     osc1.frequency.value = 1800;
     osc2.frequency.value = 1200;
-
-    gain.gain.value = 0.5;
+    gain.gain.value = 0.45;
 
     osc1.connect(gain);
     osc2.connect(gain);
@@ -78,13 +78,12 @@ function playBeep(){
 
     osc1.start();
     osc2.start();
-
-    osc1.stop(audioCtx.currentTime + 0.15);
-    osc2.stop(audioCtx.currentTime + 0.15);
+    osc1.stop(audioCtx.currentTime + 0.14);
+    osc2.stop(audioCtx.currentTime + 0.14);
   }catch{}
 }
 
-/* ---------- feedback ---------- */
+/* ---------- FEEDBACK ---------- */
 function toast(msg, ok = true){
   els.toast.textContent = msg;
   els.toast.className = 'toast ' + (ok ? 'good' : 'bad');
@@ -109,15 +108,81 @@ function successFlash(){
 
   document.body.appendChild(flash);
 
-  if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+  // STRONG vibration pattern (max allowed on iOS web)
+  if (navigator.vibrate) {
+    navigator.vibrate([80, 40, 80, 40, 120]);
+  }
+
   playBeep();
 
   setTimeout(() => flash.remove(), 220);
 }
 
-/* ---------- scan handling ---------- */
-const norm = v => String(v ?? '').trim().toLowerCase();
+/* ---------- PERSISTENCE ---------- */
+function save(){
+  localStorage.setItem(STORAGE, JSON.stringify({
+    rows: state.rows,
+    scanned: [...state.scanned],
+    make: state.make,
+    model: state.model,
+    last: state.last
+  }));
+}
 
+function load(){
+  const s = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+  state.rows = s.rows || [];
+  state.scanned = new Set(s.scanned || []);
+  state.make = s.make || '';
+  state.model = s.model || '';
+  state.last = s.last || '';
+}
+
+/* ---------- CSV PARSING ---------- */
+function splitCSV(line){
+  const out=[], cur=[]; let q=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){ q=!q; continue; }
+    if(c===',' && !q){ out.push(cur.join('')); cur.length=0; continue; }
+    cur.push(c);
+  }
+  out.push(cur.join(''));
+  return out;
+}
+
+function findHeader(lines){
+  const need=[['stock','stock #','stock number'],['make'],['model'],['condition']];
+  for(let i=0;i<lines.length;i++){
+    const cols=splitCSV(lines[i]).map(norm);
+    if(need.every(g=>cols.some(c=>g.includes(c)))) return i;
+  }
+  return -1;
+}
+
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  const h=findHeader(lines);
+  if(h<0) return [];
+
+  const headers=splitCSV(lines[h]).map(h=>{
+    const n=norm(h);
+    if(n.includes('stock')) return 'Stock';
+    if(n==='make') return 'Make';
+    if(n==='model') return 'Model';
+    if(n==='condition') return 'Condition';
+    return h;
+  });
+
+  return lines.slice(h+1).map(l=>{
+    const v=splitCSV(l);
+    const o={};
+    headers.forEach((h,i)=>o[h]=v[i]?.trim());
+    return o;
+  }).filter(r=>r.Stock);
+}
+
+/* ---------- FILTERING ---------- */
 function filtered(){
   return state.rows.filter(r =>
     norm(r.Condition)==='new' &&
@@ -126,81 +191,143 @@ function filtered(){
   );
 }
 
-function handleScan(code){
-  const c = String(code||'').trim();
-  if (!c) return;
-
-  if (!filtered().some(r => r.Stock === c)){
-    toast('Not in NEW list', false);
-    return;
+/* ---------- UI UPDATE ---------- */
+function update(){
+  if(!state.rows.length){
+    els.heroTitle.textContent='Upload your CSV';
+    els.heroSub.textContent='Header row detected automatically';
+    els.status.textContent='No file loaded';
+    els.expected.textContent=els.scanned.textContent=els.remaining.textContent='0';
+    els.pct.textContent='0%';
+    els.ring.style.setProperty('--p',0);
+    els.lastCode.textContent='—';
+    save(); return;
   }
-  if (state.scanned.has(c)){
-    toast('Duplicate', false);
-    return;
+
+  const f=filtered();
+  const scanned=f.filter(r=>state.scanned.has(r.Stock)).length;
+  const remaining=f.length-scanned;
+  const pct=f.length?Math.round(scanned/f.length*100):0;
+
+  els.expected.textContent=f.length;
+  els.scanned.textContent=scanned;
+  els.remaining.textContent=remaining;
+  els.pct.textContent=pct+'%';
+  els.ring.style.setProperty('--p',pct);
+  els.lastCode.textContent=state.last||'—';
+
+  els.heroTitle.textContent = remaining===0 && f.length ? 'Complete' : 'READY TO SCAN';
+  els.heroSub.textContent = 'Camera continuous • Bluetooth supported';
+  els.status.textContent = remaining===0 && f.length ? 'Complete' : 'In progress';
+
+  save();
+}
+
+/* ---------- SCAN HANDLING ---------- */
+function handleScan(code){
+  const c=String(code||'').trim();
+  if(!c) return;
+
+  if(!filtered().some(r=>r.Stock===c)){
+    toast('Not in NEW list',false); return;
+  }
+  if(state.scanned.has(c)){
+    toast('Duplicate',false); return;
   }
 
   state.scanned.add(c);
-  state.last = c;
-
+  state.last=c;
   successFlash();
-  toast('Scanned', true);
+  toast('Scanned',true);
+  update();
 }
 
-/* ---------- IMPORTANT: USER AUDIO UNLOCK ---------- */
-// This guarantees audio is allowed *if iOS permits it*
-els.camBtn.onclick = () => {
-  unlockAudio();
-  openCam();
-};
+/* ---------- BLUETOOTH ---------- */
+let kbBuf='', kbTimer=null;
+document.addEventListener('keydown',e=>{
+  if(e.key.length!==1) return;
+  kbBuf+=e.key;
+  clearTimeout(kbTimer);
+  kbTimer=setTimeout(()=>{
+    handleScan(kbBuf.trim());
+    kbBuf='';
+  },55);
+});
 
-els.upload.onclick = () => {
-  unlockAudio();
-  els.file.click();
-};
-
-/* ---------- Camera scanning (unchanged logic) ---------- */
+/* ---------- CAMERA (ZXING CONTINUOUS) ---------- */
 let reader=null, stream=null;
 let lastCam='', lastTime=0;
 const COOLDOWN=900;
 
 async function openCam(){
-  if (!state.rows.length){
-    toast('Upload CSV first', false);
-    return;
+  unlockAudio();
+  if(!state.rows.length){
+    toast('Upload CSV first',false); return;
   }
 
   els.camModal.style.display='block';
 
   try{
-    reader = new ZXing.BrowserMultiFormatReader();
-    stream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:'environment'} });
-
-    els.camVideo.srcObject = stream;
+    reader=new ZXing.BrowserMultiFormatReader();
+    stream=await navigator.mediaDevices.getUserMedia({ video:{facingMode:'environment'} });
+    els.camVideo.srcObject=stream;
     await els.camVideo.play();
 
-    reader.decodeFromVideoDevice(null, els.camVideo, res => {
-      if (!res) return;
-      const code = res.getText();
-      const now = Date.now();
-      if (code === lastCam && now-lastTime < COOLDOWN) return;
-      lastCam = code;
-      lastTime = now;
+    reader.decodeFromVideoDevice(null, els.camVideo, res=>{
+      if(!res) return;
+      const code=res.getText();
+      const now=Date.now();
+      if(code===lastCam && now-lastTime<COOLDOWN) return;
+      lastCam=code; lastTime=now;
       handleScan(code);
     });
-
   }catch{
-    els.camHint.textContent='Camera permission blocked';
+    els.camHint.textContent='Camera blocked';
   }
 }
 
-/* ---------- Bluetooth scanning ---------- */
-let buf='', t=null;
-document.addEventListener('keydown', e=>{
-  if (e.key.length!==1) return;
-  buf+=e.key;
-  clearTimeout(t);
-  t=setTimeout(()=>{
-    handleScan(buf.trim());
-    buf='';
-  },55);
-});
+function closeCam(){
+  try{
+    reader?.reset();
+    stream?.getTracks().forEach(t=>t.stop());
+  }catch{}
+  reader=null; stream=null;
+  els.camModal.style.display='none';
+}
+
+/* ---------- EVENTS ---------- */
+els.camBtn.onclick=()=>{ unlockAudio(); openCam(); };
+els.camClose.onclick=closeCam;
+els.camModal.onclick=e=>{ if(e.target===els.camModal) closeCam(); };
+
+els.upload.onclick=()=>{ unlockAudio(); els.file.click(); };
+
+els.file.onchange=e=>{
+  const f=e.target.files[0];
+  if(!f) return;
+
+  const r=new FileReader();
+  r.onload=()=>{
+    state.rows=parseCSV(r.result);
+    state.scanned.clear();
+    state.make=''; state.model=''; state.last='';
+
+    const makes=[...new Set(state.rows.map(r=>r.Make).filter(Boolean))].sort();
+    const models=[...new Set(state.rows.map(r=>r.Model).filter(Boolean))].sort();
+
+    els.make.innerHTML='<option value="">All</option>'+makes.map(m=>`<option>${m}</option>`).join('');
+    els.model.innerHTML='<option value="">All</option>'+models.map(m=>`<option>${m}</option>`).join('');
+
+    update();
+    toast('CSV loaded',true);
+  };
+  r.readAsText(f);
+};
+
+els.make.onchange=()=>{ state.make=els.make.value; update(); };
+els.model.onchange=()=>{ state.model=els.model.value; update(); };
+els.reset.onclick=()=>{ state.scanned.clear(); state.last=''; update(); };
+
+/* ---------- INIT ---------- */
+load();
+update();
