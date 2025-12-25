@@ -1,11 +1,17 @@
 /* ==================================================
-   STOCK SCAN – iPHONE SAFARI CAMERA FIX (B-case)
-   Camera opens but no decode => use decodeFromVideoDevice + hints + cooldown
+   STOCK SCAN – FINAL STABLE BUILD (LOGIN + SCAN)
    ================================================== */
 
-const STORE = 'stockscan_final_working_cam_v1';
+/* ---------- LOGIN GUARD ---------- */
+if (localStorage.getItem('stockscan_logged_in') !== 'yes') {
+  location.href = 'login.html';
+}
+
+/* ---------- CONSTANTS ---------- */
+const STORE = 'stockscan_final_prod_v1';
 const $ = id => document.getElementById(id);
 
+/* ---------- DOM ---------- */
 const els = {
   upload: $('btnUpload'),
   file: $('fileInput'),
@@ -30,15 +36,16 @@ const els = {
   camBtn: $('btnCamera'),
   camModal: $('camModal'),
   camVideo: $('camVideo'),
-  backMenu: $('btnBackMenu'),
+  backMenu: $('btnBackMenu')
 };
 
-/* ---------- NORMALISE ---------- */
-const clean = v =>
-  String(v ?? '')
-    .replace(/\.0$/, '')     // Excel numbers
-    .replace(/\s+/g, '')     // whitespace/newlines
+/* ---------- NORMALISATION (CRITICAL) ---------- */
+function clean(v) {
+  return String(v ?? '')
+    .replace(/\.0$/, '')      // Excel numbers
+    .replace(/\s+/g, '')      // whitespace / newlines
     .trim();
+}
 
 /* ---------- STATE ---------- */
 let state = {
@@ -63,25 +70,32 @@ function load() {
   state.history = s.history || [];
 }
 
-/* ---------- FEEDBACK ---------- */
+/* ---------- VISUAL FEEDBACK ---------- */
 function flash(color) {
   const d = document.createElement('div');
-  d.style.cssText = `position:fixed;inset:0;background:${color};z-index:999999;pointer-events:none`;
+  d.style.cssText = `
+    position:fixed;
+    inset:0;
+    background:${color};
+    z-index:999999;
+    pointer-events:none;
+  `;
   document.body.appendChild(d);
   d.offsetHeight; // force paint on iOS
   setTimeout(() => d.remove(), 180);
 }
-const okFlash = () => flash('rgba(40,220,120,.45)');
+
+const okFlash  = () => flash('rgba(40,220,120,.45)');
 const badFlash = () => flash('rgba(220,40,40,.45)');
 
-function toast(msg, ok=true){
+function toast(msg, ok=true) {
   els.toast.textContent = msg;
   els.toast.className = 'toast ' + (ok ? 'good' : 'bad');
   setTimeout(() => els.toast.className = 'toast', 900);
 }
 
-/* ---------- CSV (simple) ---------- */
-function parseCSV(text){
+/* ---------- CSV PARSER ---------- */
+function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   const hi = lines.findIndex(l => /stock/i.test(l) && /condition/i.test(l));
   if (hi < 0) return [];
@@ -105,10 +119,12 @@ function parseCSV(text){
 }
 
 const filtered = () =>
-  state.rows.filter(r => String(r.Condition || '').toLowerCase() === 'new');
+  state.rows.filter(r =>
+    String(r.Condition || '').toLowerCase() === 'new'
+  );
 
-/* ---------- UPDATE ---------- */
-function update(){
+/* ---------- UPDATE UI ---------- */
+function update() {
   const f = filtered();
   const s = f.filter(r => state.scanned.has(r.Stock)).length;
   const total = f.length;
@@ -121,15 +137,15 @@ function update(){
   els.pct.textContent = pct + '%';
   els.ring.style.setProperty('--p', pct);
 
-  els.history.innerHTML = state.history.slice(0,5)
+  els.history.innerHTML = state.history.slice(0, 5)
     .map(h => `<li>${h.Stock} · ${h.Serial || ''}</li>`)
     .join('');
 
   save();
 }
 
-/* ---------- SCAN ---------- */
-function handleScan(raw){
+/* ---------- HANDLE SCAN ---------- */
+function handleScan(raw) {
   const code = clean(raw);
   if (!code) return;
 
@@ -140,25 +156,27 @@ function handleScan(raw){
     toast('Not in NEW list', false);
     return;
   }
+
   if (state.scanned.has(code)) {
     badFlash();
-    toast('Duplicate', false);
+    toast('Duplicate scan', false);
     return;
   }
 
   state.scanned.add(code);
   state.history.unshift(row);
 
-  els.sdStock.textContent = `STOCK: ${row.Stock}`;
+  els.sdStock.textContent  = `STOCK: ${row.Stock}`;
   els.sdSerial.textContent = `SERIAL: ${row.Serial || '—'}`;
-  els.sdMeta.textContent = `Make: ${row.Make || '—'} · Model: ${row.Model || '—'} · Calibre: ${row.Calibre || '—'}`;
+  els.sdMeta.textContent   =
+    `Make: ${row.Make || '—'} · Model: ${row.Model || '—'} · Calibre: ${row.Calibre || '—'}`;
 
   okFlash();
   toast('Scanned', true);
   update();
 }
 
-/* ---------- BLUETOOTH ---------- */
+/* ---------- BLUETOOTH SCANNER ---------- */
 let kbBuf = '', kbTimer = null;
 document.addEventListener('keydown', e => {
   if (e.key.length !== 1) return;
@@ -170,22 +188,14 @@ document.addEventListener('keydown', e => {
   }, 55);
 });
 
-/* ---------- CAMERA (FIX FOR B) ---------- */
+/* ---------- CAMERA (iPHONE SAFARI SAFE) ---------- */
 let reader = null;
 let stream = null;
 let lastCam = '';
 let lastCamTime = 0;
 const COOLDOWN_MS = 800;
 
-function closeCamera(){
-  try { reader?.reset(); } catch {}
-  try { stream?.getTracks().forEach(t => t.stop()); } catch {}
-  reader = null;
-  stream = null;
-  els.camModal.style.display = 'none';
-}
-
-async function openCamera(){
+async function openCamera() {
   if (!state.rows.length) {
     toast('Upload CSV first', false);
     return;
@@ -193,7 +203,6 @@ async function openCamera(){
 
   els.camModal.style.display = 'block';
 
-  // Ensure video element is in a good state for iOS
   els.camVideo.setAttribute('playsinline', '');
   els.camVideo.muted = true;
   els.camVideo.autoplay = true;
@@ -207,7 +216,6 @@ async function openCamera(){
     els.camVideo.srcObject = stream;
     await els.camVideo.play();
 
-    // Strong hints: CODE_128/EAN are common on stock labels
     const hints = new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
       ZXing.BarcodeFormat.CODE_128,
@@ -222,52 +230,38 @@ async function openCamera(){
 
     reader = new ZXing.BrowserMultiFormatReader(hints, 300);
 
-    // This is the reliable iOS path
-    reader.decodeFromVideoDevice(null, els.camVideo, (result, err) => {
-      if (result) {
-        const text = result.getText();
-        const now = Date.now();
-        if (text === lastCam && (now - lastCamTime) < COOLDOWN_MS) return;
-        lastCam = text; lastCamTime = now;
-        handleScan(text);
-      }
-      // ignore errors (NotFoundException happens constantly between frames)
+    reader.decodeFromVideoDevice(null, els.camVideo, (result) => {
+      if (!result) return;
+      const text = result.getText();
+      const now = Date.now();
+      if (text === lastCam && (now - lastCamTime) < COOLDOWN_MS) return;
+      lastCam = text;
+      lastCamTime = now;
+      handleScan(text);
     });
 
   } catch (e) {
     closeCamera();
-    toast('Camera blocked / unavailable', false);
+    toast('Camera unavailable', false);
   }
+}
+
+function closeCamera() {
+  try { reader?.reset(); } catch {}
+  try { stream?.getTracks().forEach(t => t.stop()); } catch {}
+  reader = null;
+  stream = null;
+  els.camModal.style.display = 'none';
 }
 
 els.camBtn.onclick = openCamera;
 els.backMenu.onclick = closeCamera;
 
-/* ---------- EXPORTS ---------- */
-function exportCSV(rows, name){
-  if (!rows.length) { toast('Nothing to export', false); return; }
-  const csv =
-    Object.keys(rows[0]).join(',') + '\n' +
-    rows.map(r => Object.values(r).join(',')).join('\n');
-
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
-  a.download = name;
-  a.click();
-}
-
-els.exportS.onclick = () => exportCSV(
-  state.rows.filter(r => state.scanned.has(r.Stock)),
-  'scanned.csv'
-);
-
-els.exportM.onclick = () => exportCSV(
-  state.rows.filter(r => !state.scanned.has(r.Stock)),
-  'missing.csv'
-);
-
 /* ---------- BUTTONS ---------- */
-els.upload.onclick = () => { els.file.value=''; els.file.click(); };
+els.upload.onclick = () => {
+  els.file.value = '';
+  els.file.click();
+};
 
 els.file.onchange = e => {
   const f = e.target.files?.[0];
@@ -295,6 +289,27 @@ els.clear.onclick = () => {
   closeCamera();
   location.reload();
 };
+
+function exportCSV(rows, name) {
+  if (!rows.length) {
+    toast('Nothing to export', false);
+    return;
+  }
+  const csv =
+    Object.keys(rows[0]).join(',') + '\n' +
+    rows.map(r => Object.values(r).join(',')).join('\n');
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = name;
+  a.click();
+}
+
+els.exportS.onclick = () =>
+  exportCSV(state.rows.filter(r => state.scanned.has(r.Stock)), 'scanned.csv');
+
+els.exportM.onclick = () =>
+  exportCSV(state.rows.filter(r => !state.scanned.has(r.Stock)), 'missing.csv');
 
 /* ---------- INIT ---------- */
 load();
