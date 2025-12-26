@@ -43,6 +43,7 @@ let lastTime = 0;
 /* ---------- STORAGE KEYS ---------- */
 const LS_ROWS = 'stockscan_rows';
 const LS_SCANNED = 'stockscan_scanned';
+const LS_LAST = 'stockscan_last'; // 👈 NEW
 
 /* ---------- HELPERS ---------- */
 const clean = v =>
@@ -109,6 +110,23 @@ function saveState(){
   localStorage.setItem(LS_SCANNED, JSON.stringify([...scanned]));
 }
 
+function saveLast(row){
+  localStorage.setItem(LS_LAST, row.Stock);
+}
+
+function restoreLast(){
+  const stock = localStorage.getItem(LS_LAST);
+  if (!stock || !rows.length) return;
+
+  const row = rows.find(r => r.Stock === stock);
+  if (!row) return;
+
+  els.stock.textContent = `STOCK: ${row.Stock}`;
+  els.serial.textContent = `SERIAL: ${row.Serial || '—'}`;
+  els.meta.textContent =
+    `${row.Make || '—'} · ${row.Model || '—'} · ${row.Calibre || '—'}`;
+}
+
 function loadState(){
   const r = localStorage.getItem(LS_ROWS);
   const s = localStorage.getItem(LS_SCANNED);
@@ -116,7 +134,8 @@ function loadState(){
   if (r) rows = JSON.parse(r);
   if (s) scanned = new Set(JSON.parse(s));
 
-  updateStats(); // silent restore
+  updateStats();
+  restoreLast(); // 👈 restore display silently
 }
 
 /* ---------- SCAN HANDLER ---------- */
@@ -138,6 +157,7 @@ function handleScan(code){
   }
 
   scanned.add(row.Stock);
+  saveLast(row);
 
   vibrate();
   greenFlash();
@@ -166,8 +186,13 @@ els.file.onchange = e => {
   r.onload = () => {
     rows = parseCSV(r.result);
     scanned.clear();
+    localStorage.removeItem(LS_LAST);
     saveState();
     updateStats();
+
+    els.stock.textContent = '';
+    els.serial.textContent = '';
+    els.meta.textContent = '';
   };
   r.readAsText(f);
 };
@@ -219,7 +244,7 @@ document.addEventListener('keydown', e => {
   }, 55);
 });
 
-/* ---------- EXPORTS (FIXED) ---------- */
+/* ---------- EXPORTS ---------- */
 function exportCSV(list, filename){
   if (!list.length) return;
 
@@ -253,8 +278,13 @@ els.exportM.onclick = () => {
 /* ---------- BUTTONS ---------- */
 els.reset.onclick = () => {
   scanned.clear();
+  localStorage.removeItem(LS_LAST);
   saveState();
   updateStats();
+
+  els.stock.textContent = '';
+  els.serial.textContent = '';
+  els.meta.textContent = '';
 };
 
 els.clear.onclick = () => {
@@ -262,7 +292,12 @@ els.clear.onclick = () => {
   scanned.clear();
   localStorage.removeItem(LS_ROWS);
   localStorage.removeItem(LS_SCANNED);
+  localStorage.removeItem(LS_LAST);
   updateStats();
+
+  els.stock.textContent = '';
+  els.serial.textContent = '';
+  els.meta.textContent = '';
 };
 
 /* ---------- INIT ---------- */
