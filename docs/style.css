@@ -1,10 +1,88 @@
+*{
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui;
+}
+body{
+  margin:0;
+  padding:16px;
+  background:#020617;
+  color:white;
+}
+h1{text-align:center;margin:10px 0}
+.sub{text-align:center;color:#94a3b8;margin-bottom:16px}
+
+.login{display:flex;flex-direction:column;gap:12px;align-items:center}
+.login input{padding:12px;width:80%;border-radius:10px;border:none}
+.login button{padding:12px 20px;border-radius:10px;border:none;background:#2563eb;color:white}
+
+.buttons{display:flex;gap:8px;margin-bottom:8px}
+.buttons button{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:#1e293b;
+  color:white;
+  font-weight:600;
+}
+
+.stats{
+  display:flex;
+  justify-content:space-between;
+  margin:14px 0;
+}
+
+.card{
+  background:#0f172a;
+  padding:14px;
+  border-radius:14px;
+}
+
+.toast{
+  position:fixed;
+  bottom:30px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:10px 16px;
+  border-radius:12px;
+  opacity:0;
+}
+.toast.show{opacity:1;background:#22c55e}
+
 .flash{
   position:fixed;
   inset:0;
   background:rgba(34,197,94,.35);
   opacity:0;
   pointer-events:none;
-  transition:opacity .15s;
-  z-index:9999;
 }
 .flash.show{opacity:1}
+
+.banner{
+  background:#14532d;
+  color:#dcfce7;
+  padding:10px;
+  border-radius:12px;
+  margin-bottom:10px;
+  text-align:center;
+  font-weight:700;
+}
+.hidden{display:none}
+
+.cam{
+  position:fixed;
+  inset:0;
+  background:black;
+  display:none;
+}
+.cam video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.cam button{
+  position:absolute;
+  bottom:20px;
+  left:20px;
+  padding:10px 14px;
+}
