@@ -21,11 +21,12 @@ const els = {
   banner: $('banner'),
   toast: $('toast'),
   flash: $('flash'),
+
   cam: $('cam'),
   video: $('video')
 };
 
-/* ---------- BIG CONFIRM ELEMENT ---------- */
+/* ---------- BIG CONFIRM ---------- */
 const confirmEl = document.createElement('div');
 confirmEl.className = 'scan-confirm';
 confirmEl.textContent = '✔ SCANNED';
@@ -39,26 +40,31 @@ let stream = null;
 let lastText = '';
 let lastTime = 0;
 
-/* ---------- HELPERS ---------- */
-const clean = v =>
-  String(v ?? '')
-    .replace(/\.0$/, '')
-    .replace(/\s+/g, '')
-    .trim();
+/* ---------- AUDIO (iOS SAFE) ---------- */
+let audioCtx = null;
 
-/* ---------- AUDIO (LOUD BEEP) ---------- */
-let audioCtx;
-function beep(){
+function unlockAudio(){
   if(!audioCtx){
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
+  if(audioCtx.state === 'suspended'){
+    audioCtx.resume();
+  }
+}
+
+function beep(){
+  if(!audioCtx) return;
+
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
+
   osc.type = 'square';
-  osc.frequency.value = 1200; // loud & sharp
-  gain.gain.value = 0.8;
+  osc.frequency.value = 1200;   // loud scanner-style beep
+  gain.gain.value = 0.9;
+
   osc.connect(gain);
   gain.connect(audioCtx.destination);
+
   osc.start();
   osc.stop(audioCtx.currentTime + 0.12);
 }
@@ -66,7 +72,7 @@ function beep(){
 /* ---------- VIBRATION ---------- */
 function vibrate(){
   if(navigator.vibrate){
-    navigator.vibrate([120, 40, 120]); // strong pattern
+    navigator.vibrate([120, 40, 120]);
   }
 }
 
@@ -81,23 +87,31 @@ function bigConfirm(){
   setTimeout(()=>confirmEl.classList.remove('show'),450);
 }
 
+/* ---------- HELPERS ---------- */
+const clean = v =>
+  String(v ?? '')
+    .replace(/\.0$/, '')
+    .replace(/\s+/g, '')
+    .trim();
+
 /* ---------- CSV ---------- */
 function parseCSV(text){
   const lines = text.split(/\r?\n/).filter(l=>l.trim());
   const h = lines.findIndex(l=>/stock/i.test(l)&&/condition/i.test(l));
-  if(h<0) return [];
+  if(h < 0) return [];
+
   const heads = lines[h].split(',');
 
   return lines.slice(h+1).map(r=>{
-    const v=r.split(','),o={};
+    const v=r.split(','), o={};
     heads.forEach((x,i)=>{
       const n=x.toLowerCase();
-      if(n.includes('stock')) o.Stock=clean(v[i]);
-      if(n.includes('serial')) o.Serial=v[i]?.trim();
-      if(n==='make') o.Make=v[i]?.trim();
-      if(n==='model') o.Model=v[i]?.trim();
-      if(n.includes('cal')) o.Calibre=v[i]?.trim();
-      if(n==='condition') o.Condition=v[i]?.trim();
+      if(n.includes('stock')) o.Stock = clean(v[i]);
+      if(n.includes('serial')) o.Serial = v[i]?.trim();
+      if(n==='make') o.Make = v[i]?.trim();
+      if(n==='model') o.Model = v[i]?.trim();
+      if(n.includes('cal')) o.Calibre = v[i]?.trim();
+      if(n==='condition') o.Condition = v[i]?.trim();
     });
     return o;
   }).filter(r=>r.Stock);
@@ -142,34 +156,42 @@ function handleScan(code){
 }
 
 /* ---------- CSV LOAD ---------- */
-els.upload.onclick=()=>{
-  els.file.value='';
+els.upload.onclick = () => {
+  els.file.value = '';
   els.file.click();
 };
 
-els.file.onchange=e=>{
-  const f=e.target.files[0];
+els.file.onchange = e => {
+  const f = e.target.files[0];
   if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{
-    rows=parseCSV(r.result);
+
+  const r = new FileReader();
+  r.onload = () => {
+    rows = parseCSV(r.result);
     scanned.clear();
     updateStats();
-    els.banner.textContent='NO DOUBLE BOOKINGS DETECTED';
+    els.banner.textContent = 'NO DOUBLE BOOKINGS DETECTED';
     els.banner.classList.remove('hidden');
   };
   r.readAsText(f);
 };
 
 /* ---------- CAMERA ---------- */
-els.scan.onclick=async()=>{
-  if(!rows.length) return alert('Upload CSV first');
+els.scan.onclick = async () => {
+  unlockAudio(); // 🔊 REQUIRED for iOS sound
+
+  if(!rows.length){
+    alert('Upload CSV first');
+    return;
+  }
 
   els.cam.style.display='block';
+
   stream = await navigator.mediaDevices.getUserMedia({
     video:{facingMode:{ideal:'environment'}},
     audio:false
   });
+
   els.video.srcObject = stream;
   await els.video.play();
 
@@ -183,7 +205,8 @@ els.scan.onclick=async()=>{
   });
 };
 
-window.closeCam=()=>{
+/* ---------- CLOSE CAMERA ---------- */
+window.closeCam = () => {
   reader?.reset();
   stream?.getTracks().forEach(t=>t.stop());
   els.cam.style.display='none';
@@ -202,11 +225,12 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- BUTTONS ---------- */
-els.reset.onclick=()=>{
+els.reset.onclick = () => {
   scanned.clear();
   updateStats();
 };
-els.clear.onclick=()=>{
+
+els.clear.onclick = () => {
   rows=[];
   scanned.clear();
   updateStats();
