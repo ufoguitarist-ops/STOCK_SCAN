@@ -4,58 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Stock Scan</title>
-
 <link rel="stylesheet" href="style.css">
-<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body>
 
 <script>
-if(localStorage.getItem('logged')!=='yes'){
-  location.replace('login.html');
+if (localStorage.getItem('logged') !== 'yes') {
+  location.href = 'login.html';
 }
 </script>
 
 <h1>STOCK SCAN</h1>
-<p class="sub">Inventory Scanner</p>
+
+<div class="buttons">
+  <button id="btnUpload" type="button">Upload CSV</button>
+  <button id="btnScan" type="button">Scan</button>
+  <button id="btnReset" type="button">Reset Scans</button>
+  <button id="btnClear" type="button">Clear CSV</button>
+</div>
+
+<select id="makeFilter" class="make-filter">
+  <option value="">All Makes</option>
+</select>
+
+<div class="stats">
+  <div>Expected: <span id="expected">0</span></div>
+  <div>Scanned: <span id="scanned">0</span></div>
+  <div>Remaining: <span id="remaining">0</span></div>
+</div>
 
 <div id="banner" class="banner hidden"></div>
 
-<div class="buttons">
-  <button id="btnUpload">Upload CSV</button>
-  <button id="btnScan">Scan</button>
+<div class="card">
+  <div id="dStock"></div>
+  <div id="dSerial"></div>
+  <div id="dMeta"></div>
 </div>
 
 <div class="buttons">
-  <button id="btnReset">Reset Scan</button>
-  <button id="btnClear">Clear CSV</button>
-</div>
-
-<div class="buttons">
-  <button id="btnExportScanned">Export Scanned</button>
-  <button id="btnExportMissing">Export Missing</button>
+  <button id="btnExportScanned" type="button">Export Scanned</button>
+  <button id="btnExportMissing" type="button">Export Missing</button>
 </div>
 
 <input id="file" type="file" accept=".csv" hidden>
 
-<div class="stats">
-  <div>Expected <b id="expected">0</b></div>
-  <div>Scanned <b id="scanned">0</b></div>
-  <div>Remaining <b id="remaining">0</b></div>
-</div>
-
-<div class="card">
-  <div id="dStock">STOCK: —</div>
-  <div id="dSerial">SERIAL: —</div>
-  <div id="dMeta">Make · Model · Calibre</div>
-</div>
-
-<div id="toast" class="toast"></div>
 <div id="flash" class="flash"></div>
 
 <div id="cam" class="cam">
-  <video id="video" playsinline></video>
-  <button onclick="closeCam()">⬅ Back</button>
+  <video id="video"></video>
+  <button onclick="closeCam()">Close</button>
 </div>
 
 <script src="app.js"></script>
