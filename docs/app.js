@@ -40,6 +40,10 @@ let stream = null;
 let lastText = '';
 let lastTime = 0;
 
+/* ---------- STORAGE KEYS ---------- */
+const LS_ROWS = 'stockscan_rows';
+const LS_SCANNED = 'stockscan_scanned';
+
 /* ---------- HELPERS ---------- */
 const clean = v =>
   String(v ?? '')
@@ -47,7 +51,7 @@ const clean = v =>
     .replace(/\s+/g, '')
     .trim();
 
-/* ---------- VIBRATION (SAFE) ---------- */
+/* ---------- VIBRATION ---------- */
 function vibrate(){
   if (navigator.vibrate) {
     navigator.vibrate([120, 40, 120]);
@@ -65,7 +69,7 @@ function bigConfirm(){
   setTimeout(() => confirmEl.classList.remove('show'), 450);
 }
 
-/* ---------- CSV ---------- */
+/* ---------- CSV PARSE ---------- */
 function parseCSV(text){
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   const h = lines.findIndex(l => /stock/i.test(l) && /condition/i.test(l));
@@ -88,6 +92,7 @@ function parseCSV(text){
   }).filter(r => r.Stock);
 }
 
+/* ---------- STATS ---------- */
 function updateStats(){
   const valid = rows.filter(r =>
     String(r.Condition || '').toLowerCase().includes('new')
@@ -95,6 +100,27 @@ function updateStats(){
   els.expected.textContent = valid.length;
   els.scanned.textContent = scanned.size;
   els.remaining.textContent = valid.length - scanned.size;
+}
+
+/* ---------- SAVE / LOAD STATE ---------- */
+function saveState(){
+  localStorage.setItem(LS_ROWS, JSON.stringify(rows));
+  localStorage.setItem(LS_SCANNED, JSON.stringify([...scanned]));
+}
+
+function loadState(){
+  const r = localStorage.getItem(LS_ROWS);
+  const s = localStorage.getItem(LS_SCANNED);
+
+  if (r) rows = JSON.parse(r);
+  if (s) scanned = new Set(JSON.parse(s));
+
+  if (rows.length) {
+    els.banner.textContent = 'CSV RESTORED FROM PREVIOUS SESSION';
+    els.banner.classList.remove('hidden');
+  }
+
+  updateStats();
 }
 
 /* ---------- SCAN HANDLER ---------- */
@@ -111,7 +137,6 @@ function handleScan(code){
 
   scanned.add(row.Stock);
 
-  // 🔥 FEEDBACK
   vibrate();
   greenFlash();
   bigConfirm();
@@ -123,6 +148,7 @@ function handleScan(code){
 
   els.banner.classList.add('hidden');
   updateStats();
+  saveState();
 }
 
 /* ---------- CSV LOAD ---------- */
@@ -139,8 +165,10 @@ els.file.onchange = e => {
   r.onload = () => {
     rows = parseCSV(r.result);
     scanned.clear();
+    saveState();
     updateStats();
-    els.banner.textContent = 'NO DOUBLE BOOKINGS DETECTED';
+
+    els.banner.textContent = 'CSV LOADED';
     els.banner.classList.remove('hidden');
   };
   r.readAsText(f);
@@ -196,13 +224,17 @@ document.addEventListener('keydown', e => {
 /* ---------- BUTTONS ---------- */
 els.reset.onclick = () => {
   scanned.clear();
+  saveState();
   updateStats();
 };
 
 els.clear.onclick = () => {
   rows = [];
   scanned.clear();
+  localStorage.removeItem(LS_ROWS);
+  localStorage.removeItem(LS_SCANNED);
   updateStats();
 };
 
-updateStats();
+/* ---------- INIT ---------- */
+loadState();
