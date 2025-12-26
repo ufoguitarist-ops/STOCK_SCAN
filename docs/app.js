@@ -116,7 +116,7 @@ function loadState(){
   if (r) rows = JSON.parse(r);
   if (s) scanned = new Set(JSON.parse(s));
 
-  updateStats(); // ❌ no banner, silent restore
+  updateStats(); // silent restore
 }
 
 /* ---------- SCAN HANDLER ---------- */
@@ -218,6 +218,37 @@ document.addEventListener('keydown', e => {
     buffer = '';
   }, 55);
 });
+
+/* ---------- EXPORTS (FIXED) ---------- */
+function exportCSV(list, filename){
+  if (!list.length) return;
+
+  const headers = Object.keys(list[0]);
+  const csv =
+    headers.join(',') + '\n' +
+    list.map(o => headers.map(h => o[h] ?? '').join(',')).join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+els.exportS.onclick = () => {
+  exportCSV(
+    rows.filter(r => scanned.has(r.Stock)),
+    'scanned.csv'
+  );
+};
+
+els.exportM.onclick = () => {
+  exportCSV(
+    rows.filter(r => !scanned.has(r.Stock)),
+    'missing.csv'
+  );
+};
 
 /* ---------- BUTTONS ---------- */
 els.reset.onclick = () => {
