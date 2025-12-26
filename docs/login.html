@@ -3,78 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Stock Scan – PIN Login</title>
+<title>Stock Scan – Login</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-page">
 
-<div class="login-wrap">
-  <h1>STOCK SCAN</h1>
-  <p class="login-sub">Enter PIN</p>
+<div class="login-shell">
+  <div class="login-card">
+    <h1>STOCK SCAN</h1>
+    <p class="login-sub">Enter PIN</p>
 
-  <div id="pinDots" class="pin-dots">
-    <span></span><span></span><span></span><span></span>
+    <input
+      id="pin"
+      class="pin-input"
+      type="password"
+      inputmode="numeric"
+      pattern="[0-9]*"
+      maxlength="4"
+      placeholder="••••"
+      autofocus
+    >
+
+    <div id="loginMsg" class="login-msg">Incorrect PIN</div>
   </div>
-
-  <div class="pin-pad">
-    <button onclick="press(1)">1</button>
-    <button onclick="press(2)">2</button>
-    <button onclick="press(3)">3</button>
-    <button onclick="press(4)">4</button>
-    <button onclick="press(5)">5</button>
-    <button onclick="press(6)">6</button>
-    <button onclick="press(7)">7</button>
-    <button onclick="press(8)">8</button>
-    <button onclick="press(9)">9</button>
-    <button class="wide" onclick="clearPin()">Clear</button>
-    <button onclick="press(0)">0</button>
-    <button class="wide danger" onclick="back()">⌫</button>
-  </div>
-
-  <div id="loginMsg" class="login-msg"></div>
 </div>
 
 <script>
-const CORRECT_PIN = '1234';
-let entered = '';
-
-const dots = document.querySelectorAll('#pinDots span');
+const PIN = '1234';
+const pin = document.getElementById('pin');
 const msg = document.getElementById('loginMsg');
 
-function updateDots(){
-  dots.forEach((d,i)=>{
-    d.classList.toggle('filled', i < entered.length);
-  });
-}
-
-function press(n){
-  if(entered.length >= 4) return;
-  entered += n;
-  updateDots();
-
-  if(entered.length === 4){
-    if(entered === CORRECT_PIN){
+pin.addEventListener('input', () => {
+  if (pin.value.length === 4) {
+    if (pin.value === PIN) {
       localStorage.setItem('logged','yes');
       location.href = 'index.html';
     } else {
-      msg.textContent = 'Incorrect PIN';
       msg.classList.add('show');
-      setTimeout(()=>msg.classList.remove('show'),1200);
-      entered = '';
-      updateDots();
+      pin.value = '';
+      setTimeout(() => msg.classList.remove('show'), 1200);
     }
   }
-}
-
-function clearPin(){
-  entered = '';
-  updateDots();
-}
-
-function back(){
-  entered = entered.slice(0,-1);
-  updateDots();
-}
+});
 </script>
 
 </body>
