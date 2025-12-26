@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Stock Scan – Login</title>
+<title>Login</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-page">
@@ -13,16 +13,9 @@
     <h1>STOCK SCAN</h1>
     <p class="login-sub">Enter PIN</p>
 
-    <input
-      id="pin"
-      class="pin-input"
-      type="password"
-      inputmode="numeric"
-      pattern="[0-9]*"
-      maxlength="4"
-      placeholder="••••"
-      autofocus
-    >
+    <input id="pin" class="pin-input"
+      type="password" inputmode="numeric"
+      maxlength="4" placeholder="••••" autofocus>
 
     <div id="loginMsg" class="login-msg">Incorrect PIN</div>
   </div>
@@ -41,11 +34,10 @@ pin.addEventListener('input', () => {
     } else {
       msg.classList.add('show');
       pin.value = '';
-      setTimeout(() => msg.classList.remove('show'), 1200);
+      setTimeout(()=>msg.classList.remove('show'),1200);
     }
   }
 });
 </script>
-
 </body>
 </html>
