@@ -8,7 +8,7 @@
 
 body{
   margin:0;
-  padding:16px;
+  padding:0;
   background:#020617;
   color:white;
 }
@@ -18,9 +18,9 @@ body{
 ================================ */
 h1{
   text-align:center;
-  margin:10px 0;
-  font-size:34px;
-  letter-spacing:.5px;
+  margin:0;
+  font-size:36px;
+  letter-spacing:.6px;
 }
 
 .sub{
@@ -30,48 +30,57 @@ h1{
 }
 
 /* ================================
-   LOGIN – PREMIUM PIN
+   LOGIN – FULLSCREEN PREMIUM
 ================================ */
 .login-page{
   min-height:100vh;
   display:flex;
-  align-items:center;
+  align-items:stretch;
   justify-content:center;
   background:#020617;
-  padding:20px;
 }
 
 .login-shell{
   width:100%;
-  max-width:380px;
+  max-width:480px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
 }
 
 .login-card{
+  width:100%;
+  min-height:82vh;            /* 👈 fills phone screen nicely */
   background:#0f172a;
-  border-radius:28px;
-  padding:40px 28px 44px;
+  border-radius:32px;
+  padding:48px 32px;
   text-align:center;
-  box-shadow:0 30px 80px rgba(0,0,0,.6);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-shadow:0 40px 90px rgba(0,0,0,.7);
 }
 
 .login-card h1{
-  margin:0;
+  margin-bottom:16px;
 }
 
 .login-sub{
   color:#94a3b8;
-  margin:14px 0 28px;
-  font-size:18px;
+  margin-bottom:48px;
+  font-size:20px;
 }
 
+/* PIN INPUT */
 .pin-input{
   width:100%;
-  padding:20px 0;
-  font-size:34px;
-  letter-spacing:18px;
+  padding:26px 0;
+  font-size:38px;
+  letter-spacing:22px;
   text-align:center;
   border:none;
-  border-radius:20px;
+  border-radius:22px;
   background:#020617;
   color:white;
   outline:none;
@@ -81,9 +90,10 @@ h1{
   color:#334155;
 }
 
+/* LOGIN MESSAGE */
 .login-msg{
-  margin-top:22px;
-  font-size:16px;
+  margin-top:32px;
+  font-size:18px;
   color:#f87171;
   opacity:0;
   transition:opacity .2s ease;
@@ -98,14 +108,14 @@ h1{
 .buttons{
   display:flex;
   gap:8px;
-  margin-bottom:10px;
+  margin:14px 16px 10px;
 }
 
 .buttons button{
   flex:1;
-  padding:14px;
+  padding:16px;
   border:none;
-  border-radius:14px;
+  border-radius:16px;
   background:#1e293b;
   color:white;
   font-weight:700;
@@ -122,7 +132,7 @@ h1{
 .stats{
   display:flex;
   justify-content:space-between;
-  margin:14px 0;
+  margin:14px 16px;
   font-size:16px;
 }
 
@@ -131,8 +141,9 @@ h1{
 ================================ */
 .card{
   background:#0f172a;
-  padding:16px;
-  border-radius:16px;
+  padding:18px;
+  border-radius:18px;
+  margin:0 16px;
 }
 
 /* ================================
@@ -141,9 +152,9 @@ h1{
 .banner{
   background:#14532d;
   color:#dcfce7;
-  padding:12px;
-  border-radius:14px;
-  margin-bottom:12px;
+  padding:14px;
+  border-radius:16px;
+  margin:16px;
   text-align:center;
   font-weight:800;
 }
@@ -153,15 +164,15 @@ h1{
 }
 
 /* ================================
-   TOAST (SMALL MESSAGE)
+   TOAST
 ================================ */
 .toast{
   position:fixed;
   bottom:28px;
   left:50%;
   transform:translateX(-50%);
-  padding:12px 18px;
-  border-radius:14px;
+  padding:14px 22px;
+  border-radius:18px;
   background:#22c55e;
   color:#022c22;
   opacity:0;
@@ -174,7 +185,7 @@ h1{
 }
 
 /* ================================
-   GREEN FLASH (SCAN SUCCESS)
+   GREEN FLASH
 ================================ */
 .flash{
   position:fixed;
@@ -200,9 +211,9 @@ h1{
   transform:translate(-50%,-50%) scale(.85);
   background:#16a34a;
   color:white;
-  padding:28px 36px;
-  border-radius:24px;
-  font-size:30px;
+  padding:34px 44px;
+  border-radius:30px;
+  font-size:34px;
   font-weight:900;
   text-align:center;
   opacity:0;
@@ -236,8 +247,8 @@ h1{
   position:absolute;
   bottom:20px;
   left:20px;
-  padding:14px 18px;
-  border-radius:14px;
+  padding:16px 20px;
+  border-radius:16px;
   border:none;
   background:#1e293b;
   color:white;
