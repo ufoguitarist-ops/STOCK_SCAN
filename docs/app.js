@@ -52,6 +52,9 @@ const clean = v =>
     .replace(/\s+/g, '')
     .trim();
 
+const isNew = r =>
+  String(r.Condition || '').toLowerCase().includes('new');
+
 /* ---------- VIBRATION ---------- */
 function vibrate(){
   if (navigator.vibrate) {
@@ -107,12 +110,13 @@ function hasDuplicateSerials(data){
 
 /* ---------- STATS ---------- */
 function updateStats(){
-  const valid = rows.filter(r =>
-    String(r.Condition || '').toLowerCase().includes('new')
-  );
+  const valid = rows.filter(isNew);
   els.expected.textContent = valid.length;
-  els.scanned.textContent = scanned.size;
-  els.remaining.textContent = valid.length - scanned.size;
+  els.scanned.textContent = [...scanned].filter(s =>
+    valid.some(r => r.Stock === s)
+  ).length;
+  els.remaining.textContent =
+    valid.length - els.scanned.textContent;
 }
 
 /* ---------- SAVE / LOAD ---------- */
@@ -155,8 +159,7 @@ function handleScan(code){
   if (!cleaned) return;
 
   const row = rows.find(r =>
-    r.Stock === cleaned &&
-    String(r.Condition || '').toLowerCase().includes('new')
+    r.Stock === cleaned && isNew(r)
   );
 
   if (!row) return;
@@ -201,7 +204,6 @@ els.file.onchange = e => {
     saveState();
     updateStats();
 
-    // ✅ SHOW DUPLICATE MESSAGE ON UPLOAD ONLY
     els.banner.textContent = hasDuplicateSerials(rows)
       ? '⚠ DUPLICATE SERIAL NUMBERS FOUND'
       : 'NO DOUBLE BOOKINGS DETECTED';
@@ -261,7 +263,7 @@ document.addEventListener('keydown', e => {
   }, 55);
 });
 
-/* ---------- EXPORTS ---------- */
+/* ---------- EXPORTS (NEW ONLY) ---------- */
 function exportCSV(list, filename){
   if (!list.length) return;
 
@@ -280,15 +282,15 @@ function exportCSV(list, filename){
 
 els.exportS.onclick = () => {
   exportCSV(
-    rows.filter(r => scanned.has(r.Stock)),
-    'scanned.csv'
+    rows.filter(r => isNew(r) && scanned.has(r.Stock)),
+    'scanned_new.csv'
   );
 };
 
 els.exportM.onclick = () => {
   exportCSV(
-    rows.filter(r => !scanned.has(r.Stock)),
-    'missing.csv'
+    rows.filter(r => isNew(r) && !scanned.has(r.Stock)),
+    'missing_new.csv'
   );
 };
 
