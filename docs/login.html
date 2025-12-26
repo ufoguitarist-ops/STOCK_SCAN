@@ -2,28 +2,48 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Login – Stock Scan</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body class="login">
+<body class="login-page">
 
-<h1>STOCK SCAN</h1>
-<p class="sub">Login</p>
+<div class="login-wrap">
+  <h1>STOCK SCAN</h1>
+  <p class="login-sub">Secure Login</p>
 
-<input id="user" placeholder="Username">
-<input id="pass" placeholder="Password" type="password">
-<button onclick="login()">Login</button>
+  <input
+    id="user"
+    class="login-input"
+    placeholder="Username"
+    autocomplete="off"
+  >
 
-<div id="msg"></div>
+  <input
+    id="pass"
+    class="login-input"
+    placeholder="Password"
+    type="password"
+  >
+
+  <button class="login-btn" onclick="login()">Login</button>
+
+  <div id="loginMsg" class="login-msg"></div>
+</div>
 
 <script>
 function login(){
-  if(user.value==='admin' && pass.value==='1234'){
+  const u = document.getElementById('user').value.trim();
+  const p = document.getElementById('pass').value.trim();
+
+  if(u === 'admin' && p === '1234'){
     localStorage.setItem('logged','yes');
-    location.href='index.html';
+    location.href = 'index.html';
   } else {
-    msg.textContent='Invalid login';
+    const m = document.getElementById('loginMsg');
+    m.textContent = 'Invalid login';
+    m.classList.add('show');
+    setTimeout(()=>m.classList.remove('show'),1500);
   }
 }
 </script>
