@@ -1,26 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Login</title>
+<title>Login – Stock Scan</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="login">
 
-<h2>STOCK SCAN LOGIN</h2>
+<h1>STOCK SCAN</h1>
+<p class="sub">Login</p>
 
-<input id="u" placeholder="Username">
-<input id="p" placeholder="Password" type="password">
+<input id="user" placeholder="Username">
+<input id="pass" placeholder="Password" type="password">
 <button onclick="login()">Login</button>
+
+<div id="msg"></div>
 
 <script>
 function login(){
-  if(u.value==='admin' && p.value==='1234'){
+  if(user.value==='admin' && pass.value==='1234'){
     localStorage.setItem('logged','yes');
     location.href='index.html';
   } else {
-    alert('Wrong login');
+    msg.textContent='Invalid login';
   }
 }
 </script>
