@@ -43,7 +43,7 @@ let lastTime = 0;
 /* ---------- STORAGE KEYS ---------- */
 const LS_ROWS = 'stockscan_rows';
 const LS_SCANNED = 'stockscan_scanned';
-const LS_LAST = 'stockscan_last'; // 👈 NEW
+const LS_LAST = 'stockscan_last';
 
 /* ---------- HELPERS ---------- */
 const clean = v =>
@@ -94,6 +94,17 @@ function parseCSV(text){
   }).filter(r => r.Stock);
 }
 
+/* ---------- DUPLICATE SERIAL CHECK ---------- */
+function hasDuplicateSerials(data){
+  const map = new Map();
+  for (const r of data) {
+    if (!r.Serial) continue;
+    if (!map.has(r.Serial)) map.set(r.Serial, new Set());
+    map.get(r.Serial).add(r.Stock);
+  }
+  return [...map.values()].some(s => s.size > 1);
+}
+
 /* ---------- STATS ---------- */
 function updateStats(){
   const valid = rows.filter(r =>
@@ -135,7 +146,7 @@ function loadState(){
   if (s) scanned = new Set(JSON.parse(s));
 
   updateStats();
-  restoreLast(); // 👈 restore display silently
+  restoreLast();
 }
 
 /* ---------- SCAN HANDLER ---------- */
@@ -189,6 +200,12 @@ els.file.onchange = e => {
     localStorage.removeItem(LS_LAST);
     saveState();
     updateStats();
+
+    // ✅ SHOW DUPLICATE MESSAGE ON UPLOAD ONLY
+    els.banner.textContent = hasDuplicateSerials(rows)
+      ? '⚠ DUPLICATE SERIAL NUMBERS FOUND'
+      : 'NO DOUBLE BOOKINGS DETECTED';
+    els.banner.classList.remove('hidden');
 
     els.stock.textContent = '';
     els.serial.textContent = '';
