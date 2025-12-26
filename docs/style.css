@@ -21,12 +21,13 @@ h1{text-align:center;margin:10px 0}
 }
 .buttons button{
   flex:1;
-  padding:12px;
+  padding:14px;
   border:none;
-  border-radius:12px;
+  border-radius:14px;
   background:#1e293b;
   color:white;
-  font-weight:600;
+  font-weight:700;
+  font-size:16px;
 }
 
 /* STATS */
@@ -39,23 +40,45 @@ h1{text-align:center;margin:10px 0}
 /* CARD */
 .card{
   background:#0f172a;
-  padding:14px;
-  border-radius:14px;
+  padding:16px;
+  border-radius:16px;
+}
+
+/* BIG SCAN CONFIRMATION */
+.scan-confirm{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(.85);
+  background:#16a34a;
+  color:white;
+  padding:26px 32px;
+  border-radius:22px;
+  font-size:28px;
+  font-weight:900;
+  text-align:center;
+  opacity:0;
+  z-index:100000;
+  transition:opacity .15s ease, transform .15s ease;
+}
+.scan-confirm.show{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
 }
 
 /* BANNER */
 .banner{
   background:#14532d;
   color:#dcfce7;
-  padding:10px;
-  border-radius:12px;
+  padding:12px;
+  border-radius:14px;
   margin-bottom:10px;
   text-align:center;
-  font-weight:700;
+  font-weight:800;
 }
 .hidden{display:none}
 
-/* TOAST */
+/* TOAST (fallback) */
 .toast{
   position:fixed;
   bottom:28px;
@@ -70,7 +93,7 @@ h1{text-align:center;margin:10px 0}
 }
 .toast.show{opacity:1}
 
-/* 🔥 GREEN FLASH (FIXED) */
+/* GREEN FLASH */
 .flash{
   position:fixed;
   inset:0;
@@ -99,9 +122,10 @@ h1{text-align:center;margin:10px 0}
   position:absolute;
   bottom:20px;
   left:20px;
-  padding:10px 14px;
-  border-radius:10px;
+  padding:12px 16px;
+  border-radius:12px;
   border:none;
   background:#1e293b;
   color:white;
+  font-weight:700;
 }
