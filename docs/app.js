@@ -38,7 +38,7 @@ let scanned = new Set();
 let stream = null;
 let lastText = '', lastTime = 0;
 
-/* 🔒 PERSISTENT SCANNER (iOS SAFE) */
+/* 🔒 PERSISTENT SCANNER */
 const codeReader = new ZXing.BrowserMultiFormatReader();
 
 /* ---------- HELPERS ---------- */
@@ -50,8 +50,6 @@ const clean = v =>
 
 const isNew = r =>
   String(r.Condition || '').toLowerCase().includes('new');
-
-const activeMake = () => els.makeFilter.value;
 
 /* ---------- UI FEEDBACK ---------- */
 const vibrate = () => navigator.vibrate?.([120, 40, 120]);
@@ -97,13 +95,13 @@ function buildMakeFilter(){
   els.makeFilter.value = localStorage.getItem('make') || '';
 }
 
-/* ---------- MODEL SUMMARY (GROUPED) ---------- */
+/* ---------- MODEL SUMMARY ---------- */
 function baseModel(model){
   return (model || 'Unknown').split(' ')[0].toUpperCase();
 }
 
 function renderModelSummary(){
-  const make = activeMake();
+  const make = els.makeFilter.value;
   if (!make){
     els.modelSummary.classList.add('hidden');
     els.modelSummary.innerHTML = '';
@@ -113,11 +111,7 @@ function renderModelSummary(){
   const groups = {};
 
   rows.forEach(r => {
-    if (!isNew(r)) return;
-
-    const makeNorm = String(r.Make || '').toLowerCase().trim();
-    const selectedMakeNorm = make.toLowerCase().trim();
-    if (makeNorm !== selectedMakeNorm) return;
+    if (!isNew(r) || r.Make !== make) return;
 
     const base = baseModel(r.Model);
     const model = r.Model || 'Unknown Model';
@@ -153,9 +147,9 @@ function renderModelSummary(){
   els.modelSummary.classList.remove('hidden');
 }
 
-/* ---------- STATS ---------- */
+/* ---------- STATS (FILTERED VIEW ONLY) ---------- */
 function filtered(){
-  const selectedMake = activeMake().toLowerCase().trim();
+  const selectedMake = els.makeFilter.value.toLowerCase().trim();
   return rows.filter(r =>
     isNew(r) &&
     (
@@ -187,20 +181,14 @@ function load(){
   renderModelSummary();
 }
 
-/* ---------- SCAN (FIXED WITH MAKE NORMALISATION) ---------- */
+/* ---------- SCAN (MAKE FILTER IGNORED – FIX) ---------- */
 function handleScan(code){
   const c = clean(code);
   if (!c) return;
 
-  const selectedMake = activeMake().toLowerCase().trim();
-
   const r = rows.find(x =>
     clean(x.Stock) === c &&
-    isNew(x) &&
-    (
-      !selectedMake ||
-      String(x.Make || '').toLowerCase().trim() === selectedMake
-    )
+    isNew(x)
   );
 
   if (!r) return;
@@ -248,7 +236,7 @@ els.file.onchange = e => {
 };
 
 els.makeFilter.onchange = () => {
-  localStorage.setItem('make', activeMake());
+  localStorage.setItem('make', els.makeFilter.value);
   updateStats();
   renderModelSummary();
 };
@@ -269,7 +257,7 @@ els.scan.onclick = async () => {
   codeReader.decodeFromVideoDevice(
     null,
     els.video,
-    (res, err) => {
+    (res) => {
       if (!res) return;
       const t = res.getText();
       const n = Date.now();
