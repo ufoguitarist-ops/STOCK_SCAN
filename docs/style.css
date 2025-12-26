@@ -2,20 +2,23 @@
   box-sizing:border-box;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui;
 }
+
 body{
   margin:0;
   padding:16px;
   background:#020617;
   color:white;
 }
+
 h1{text-align:center;margin:10px 0}
 .sub{text-align:center;color:#94a3b8;margin-bottom:16px}
 
-.login{display:flex;flex-direction:column;gap:12px;align-items:center}
-.login input{padding:12px;width:80%;border-radius:10px;border:none}
-.login button{padding:12px 20px;border-radius:10px;border:none;background:#2563eb;color:white}
-
-.buttons{display:flex;gap:8px;margin-bottom:8px}
+/* BUTTONS */
+.buttons{
+  display:flex;
+  gap:8px;
+  margin-bottom:8px;
+}
 .buttons button{
   flex:1;
   padding:12px;
@@ -26,38 +29,21 @@ h1{text-align:center;margin:10px 0}
   font-weight:600;
 }
 
+/* STATS */
 .stats{
   display:flex;
   justify-content:space-between;
   margin:14px 0;
 }
 
+/* CARD */
 .card{
   background:#0f172a;
   padding:14px;
   border-radius:14px;
 }
 
-.toast{
-  position:fixed;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-  padding:10px 16px;
-  border-radius:12px;
-  opacity:0;
-}
-.toast.show{opacity:1;background:#22c55e}
-
-.flash{
-  position:fixed;
-  inset:0;
-  background:rgba(34,197,94,.35);
-  opacity:0;
-  pointer-events:none;
-}
-.flash.show{opacity:1}
-
+/* BANNER */
 .banner{
   background:#14532d;
   color:#dcfce7;
@@ -69,11 +55,40 @@ h1{text-align:center;margin:10px 0}
 }
 .hidden{display:none}
 
+/* TOAST */
+.toast{
+  position:fixed;
+  bottom:28px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:12px 18px;
+  border-radius:14px;
+  background:#22c55e;
+  opacity:0;
+  z-index:99998;
+  transition:opacity .15s ease;
+}
+.toast.show{opacity:1}
+
+/* 🔥 GREEN FLASH (FIXED) */
+.flash{
+  position:fixed;
+  inset:0;
+  background:rgba(34,197,94,0.45);
+  opacity:0;
+  pointer-events:none;
+  z-index:99999;
+  transition:opacity .12s ease;
+}
+.flash.active{opacity:1}
+
+/* CAMERA */
 .cam{
   position:fixed;
   inset:0;
   background:black;
   display:none;
+  z-index:99997;
 }
 .cam video{
   width:100%;
@@ -85,4 +100,8 @@ h1{text-align:center;margin:10px 0}
   bottom:20px;
   left:20px;
   padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  background:#1e293b;
+  color:white;
 }
