@@ -35,14 +35,17 @@ document.body.appendChild(confirmEl);
 /* ---------- STATE ---------- */
 let rows = [];
 let scanned = new Set();
-let reader, stream;
+let stream = null;
 let lastText = '', lastTime = 0;
+
+/* 🔒 PERSISTENT SCANNER (FIX) */
+const codeReader = new ZXing.BrowserMultiFormatReader();
 
 /* ---------- HELPERS ---------- */
 const clean = v =>
   String(v ?? '')
     .replace(/\.0$/, '')
-    .replace(/\s+/g, '')   // 👈 IMPORTANT: restore strict cleaning
+    .replace(/\s+/g, '')
     .trim();
 
 const isNew = r =>
@@ -94,7 +97,7 @@ function buildMakeFilter(){
   els.makeFilter.value = localStorage.getItem('make') || '';
 }
 
-/* ---------- MODEL SUMMARY (GROUPED) ---------- */
+/* ---------- MODEL SUMMARY ---------- */
 function baseModel(model){
   return (model || 'Unknown').split(' ')[0].toUpperCase();
 }
@@ -172,7 +175,7 @@ function load(){
   renderModelSummary();
 }
 
-/* ---------- SCAN (FIXED) ---------- */
+/* ---------- SCAN (FIXED FOR SAFARI) ---------- */
 function handleScan(code){
   const c = clean(code);
   if (!c) return;
@@ -182,7 +185,6 @@ function handleScan(code){
     isNew(x) &&
     (!activeMake() || x.Make === activeMake())
   );
-
   if (!r) return;
 
   if (scanned.has(r.Stock)){
@@ -229,24 +231,38 @@ els.makeFilter.onchange = () => {
   renderModelSummary();
 };
 
+/* 🔥 CAMERA START (FIXED) */
 els.scan.onclick = async () => {
   if (!rows.length) return alert('Upload CSV first');
+
   els.cam.style.display = 'block';
-  stream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:'environment'} });
+
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: 'environment' } }
+  });
+
   els.video.srcObject = stream;
   await els.video.play();
-  reader = new ZXing.BrowserMultiFormatReader();
-  reader.decodeFromVideoDevice(null, els.video, res => {
-    if (!res) return;
-    const t = res.getText(), n = Date.now();
-    if (t === lastText && n - lastTime < 800) return;
-    lastText = t; lastTime = n;
-    handleScan(t);
-  });
+
+  codeReader.decodeFromVideoDevice(
+    null,
+    els.video,
+    (res, err) => {
+      if (res) {
+        const t = res.getText();
+        const n = Date.now();
+        if (t === lastText && n - lastTime < 800) return;
+        lastText = t;
+        lastTime = n;
+        handleScan(t);
+      }
+    }
+  );
 };
 
+/* 🔥 CAMERA STOP */
 window.closeCam = () => {
-  reader?.reset();
+  codeReader.reset();
   stream?.getTracks().forEach(t => t.stop());
   els.cam.style.display = 'none';
 };
