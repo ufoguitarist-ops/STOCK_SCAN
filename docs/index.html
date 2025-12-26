@@ -16,51 +16,46 @@ if(localStorage.getItem('logged')!=='yes'){
 }
 </script>
 
-<header>
-  <h1>STOCK SCAN</h1>
-  <p id="heroSub">Inventory Scanner</p>
-</header>
+<h1>STOCK SCAN</h1>
+<p class="sub">Inventory Scanner</p>
 
-<div id="statusBanner" class="status-banner hidden"></div>
+<div id="banner" class="banner hidden"></div>
 
-<section class="controls">
+<div class="buttons">
   <button id="btnUpload">Upload CSV</button>
-  <button id="btnCamera">Scan</button>
-</section>
+  <button id="btnScan">Scan</button>
+</div>
 
-<section class="controls">
+<div class="buttons">
   <button id="btnReset">Reset Scan</button>
   <button id="btnClear">Clear CSV</button>
-</section>
+</div>
 
-<section class="controls">
+<div class="buttons">
   <button id="btnExportScanned">Export Scanned</button>
   <button id="btnExportMissing">Export Missing</button>
-</section>
+</div>
 
-<input id="fileInput" type="file" accept=".csv" hidden>
+<input id="file" type="file" accept=".csv" hidden>
 
-<section class="stats">
-  <div class="stat"><span>Expected</span><strong id="expected">0</strong></div>
-  <div class="stat"><span>Scanned</span><strong id="scanned">0</strong></div>
-  <div class="stat"><span>Remaining</span><strong id="remaining">0</strong></div>
-</section>
+<div class="stats">
+  <div>Expected <b id="expected">0</b></div>
+  <div>Scanned <b id="scanned">0</b></div>
+  <div>Remaining <b id="remaining">0</b></div>
+</div>
 
-<section class="scan-details">
-  <div class="sd-stock">STOCK: —</div>
-  <div class="sd-serial">SERIAL: —</div>
-  <div class="sd-meta">Make · Model · Calibre</div>
-</section>
+<div class="card">
+  <div id="dStock">STOCK: —</div>
+  <div id="dSerial">SERIAL: —</div>
+  <div id="dMeta">Make · Model · Calibre</div>
+</div>
 
 <div id="toast" class="toast"></div>
-
 <div id="flash" class="flash"></div>
 
-<div id="camModal" class="cam-modal">
-  <video id="camVideo" playsinline></video>
-  <div class="cam-controls">
-    <button id="btnBack">⬅ Back</button>
-  </div>
+<div id="cam" class="cam">
+  <video id="video" playsinline></video>
+  <button onclick="closeCam()">⬅ Back</button>
 </div>
 
 <script src="app.js"></script>
