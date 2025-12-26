@@ -64,7 +64,8 @@ function greenFlash(){
   setTimeout(() => els.flash.classList.remove('active'), 150);
 }
 
-function bigConfirm(){
+function bigConfirm(text = '✔ SCANNED'){
+  confirmEl.textContent = text;
   confirmEl.classList.add('show');
   setTimeout(() => confirmEl.classList.remove('show'), 450);
 }
@@ -102,7 +103,7 @@ function updateStats(){
   els.remaining.textContent = valid.length - scanned.size;
 }
 
-/* ---------- SAVE / LOAD STATE ---------- */
+/* ---------- SAVE / LOAD ---------- */
 function saveState(){
   localStorage.setItem(LS_ROWS, JSON.stringify(rows));
   localStorage.setItem(LS_SCANNED, JSON.stringify([...scanned]));
@@ -115,12 +116,7 @@ function loadState(){
   if (r) rows = JSON.parse(r);
   if (s) scanned = new Set(JSON.parse(s));
 
-  if (rows.length) {
-    els.banner.textContent = 'CSV RESTORED FROM PREVIOUS SESSION';
-    els.banner.classList.remove('hidden');
-  }
-
-  updateStats();
+  updateStats(); // ❌ no banner, silent restore
 }
 
 /* ---------- SCAN HANDLER ---------- */
@@ -133,20 +129,25 @@ function handleScan(code){
     String(r.Condition || '').toLowerCase().includes('new')
   );
 
-  if (!row || scanned.has(row.Stock)) return;
+  if (!row) return;
+
+  if (scanned.has(row.Stock)) {
+    vibrate();
+    bigConfirm('⚠ DUPLICATE');
+    return;
+  }
 
   scanned.add(row.Stock);
 
   vibrate();
   greenFlash();
-  bigConfirm();
+  bigConfirm('✔ SCANNED');
 
   els.stock.textContent = `STOCK: ${row.Stock}`;
   els.serial.textContent = `SERIAL: ${row.Serial || '—'}`;
   els.meta.textContent =
     `${row.Make || '—'} · ${row.Model || '—'} · ${row.Calibre || '—'}`;
 
-  els.banner.classList.add('hidden');
   updateStats();
   saveState();
 }
@@ -167,9 +168,6 @@ els.file.onchange = e => {
     scanned.clear();
     saveState();
     updateStats();
-
-    els.banner.textContent = 'CSV LOADED';
-    els.banner.classList.remove('hidden');
   };
   r.readAsText(f);
 };
