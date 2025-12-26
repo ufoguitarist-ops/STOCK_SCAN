@@ -1,3 +1,6 @@
+/* ================================
+   GLOBAL
+================================ */
 *{
   box-sizing:border-box;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui;
@@ -10,94 +13,94 @@ body{
   color:white;
 }
 
-/* ---------- HEADERS ---------- */
+/* ================================
+   HEADERS
+================================ */
 h1{
   text-align:center;
   margin:10px 0;
   font-size:34px;
+  letter-spacing:.5px;
 }
+
 .sub{
   text-align:center;
   color:#94a3b8;
   margin-bottom:16px;
 }
 
-/* ---------- LOGIN PAGE ---------- */
+/* ================================
+   LOGIN – PREMIUM PIN
+================================ */
 .login-page{
   min-height:100vh;
   display:flex;
   align-items:center;
   justify-content:center;
+  background:#020617;
   padding:20px;
 }
 
-.login-wrap{
+.login-shell{
   width:100%;
   max-width:380px;
-  background:#0f172a;
-  padding:28px 24px 32px;
-  border-radius:22px;
-  box-shadow:0 20px 60px rgba(0,0,0,.5);
 }
 
-.login-wrap h1{
-  margin-top:0;
+.login-card{
+  background:#0f172a;
+  border-radius:28px;
+  padding:40px 28px 44px;
+  text-align:center;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
+
+.login-card h1{
+  margin:0;
 }
 
 .login-sub{
-  text-align:center;
   color:#94a3b8;
-  margin-bottom:22px;
+  margin:14px 0 28px;
   font-size:18px;
 }
 
-.login-input{
+.pin-input{
   width:100%;
-  padding:18px 16px;
-  margin-bottom:16px;
-  border-radius:16px;
+  padding:20px 0;
+  font-size:34px;
+  letter-spacing:18px;
+  text-align:center;
   border:none;
-  font-size:18px;
+  border-radius:20px;
   background:#020617;
   color:white;
+  outline:none;
 }
 
-.login-input::placeholder{
-  color:#64748b;
-}
-
-.login-btn{
-  width:100%;
-  padding:18px;
-  border:none;
-  border-radius:18px;
-  background:#22c55e;
-  color:#022c22;
-  font-size:20px;
-  font-weight:900;
-  margin-top:8px;
-}
-
-.login-btn:active{
-  transform:scale(.98);
+.pin-input::placeholder{
+  color:#334155;
 }
 
 .login-msg{
-  text-align:center;
-  color:#f87171;
-  margin-top:16px;
+  margin-top:22px;
   font-size:16px;
+  color:#f87171;
   opacity:0;
-  transition:opacity .2s;
+  transition:opacity .2s ease;
 }
-.login-msg.show{opacity:1}
+.login-msg.show{
+  opacity:1;
+}
 
-/* ---------- BUTTONS ---------- */
+/* ================================
+   BUTTON BAR
+================================ */
 .buttons{
   display:flex;
   gap:8px;
-  margin-bottom:8px;
+  margin-bottom:10px;
 }
+
 .buttons button{
   flex:1;
   padding:14px;
@@ -109,33 +112,49 @@ h1{
   font-size:16px;
 }
 
-/* ---------- STATS ---------- */
+.buttons button:active{
+  transform:scale(.98);
+}
+
+/* ================================
+   STATS
+================================ */
 .stats{
   display:flex;
   justify-content:space-between;
   margin:14px 0;
+  font-size:16px;
 }
 
-/* ---------- CARD ---------- */
+/* ================================
+   CARD
+================================ */
 .card{
   background:#0f172a;
   padding:16px;
   border-radius:16px;
 }
 
-/* ---------- BANNER ---------- */
+/* ================================
+   BANNER
+================================ */
 .banner{
   background:#14532d;
   color:#dcfce7;
   padding:12px;
   border-radius:14px;
-  margin-bottom:10px;
+  margin-bottom:12px;
   text-align:center;
   font-weight:800;
 }
-.hidden{display:none}
 
-/* ---------- TOAST ---------- */
+.hidden{
+  display:none;
+}
+
+/* ================================
+   TOAST (SMALL MESSAGE)
+================================ */
 .toast{
   position:fixed;
   bottom:28px;
@@ -144,13 +163,19 @@ h1{
   padding:12px 18px;
   border-radius:14px;
   background:#22c55e;
+  color:#022c22;
   opacity:0;
   z-index:99998;
   transition:opacity .15s ease;
 }
-.toast.show{opacity:1}
 
-/* ---------- GREEN FLASH ---------- */
+.toast.show{
+  opacity:1;
+}
+
+/* ================================
+   GREEN FLASH (SCAN SUCCESS)
+================================ */
 .flash{
   position:fixed;
   inset:0;
@@ -160,9 +185,14 @@ h1{
   z-index:99999;
   transition:opacity .12s ease;
 }
-.flash.active{opacity:1}
 
-/* ---------- BIG SCAN CONFIRM ---------- */
+.flash.active{
+  opacity:1;
+}
+
+/* ================================
+   BIG SCAN CONFIRMATION
+================================ */
 .scan-confirm{
   position:fixed;
   top:50%;
@@ -179,12 +209,15 @@ h1{
   z-index:100000;
   transition:opacity .15s ease, transform .15s ease;
 }
+
 .scan-confirm.show{
   opacity:1;
   transform:translate(-50%,-50%) scale(1);
 }
 
-/* ---------- CAMERA ---------- */
+/* ================================
+   CAMERA OVERLAY
+================================ */
 .cam{
   position:fixed;
   inset:0;
@@ -192,11 +225,13 @@ h1{
   display:none;
   z-index:99997;
 }
+
 .cam video{
   width:100%;
   height:100%;
   object-fit:cover;
 }
+
 .cam button{
   position:absolute;
   bottom:20px;
