@@ -32,6 +32,23 @@ confirmEl.className = 'scan-confirm';
 confirmEl.textContent = '✔ SCANNED';
 document.body.appendChild(confirmEl);
 
+/* ---------- ENABLE SOUND BUTTON ---------- */
+const soundBtn = document.createElement('button');
+soundBtn.textContent = '🔊 ENABLE SOUND';
+soundBtn.style.position = 'fixed';
+soundBtn.style.bottom = '90px';
+soundBtn.style.left = '50%';
+soundBtn.style.transform = 'translateX(-50%)';
+soundBtn.style.zIndex = '100001';
+soundBtn.style.padding = '14px 20px';
+soundBtn.style.borderRadius = '14px';
+soundBtn.style.border = 'none';
+soundBtn.style.fontSize = '16px';
+soundBtn.style.fontWeight = '800';
+soundBtn.style.background = '#22c55e';
+soundBtn.style.color = '#022c22';
+document.body.appendChild(soundBtn);
+
 /* ---------- STATE ---------- */
 let rows = [];
 let scanned = new Set();
@@ -40,26 +57,34 @@ let stream = null;
 let lastText = '';
 let lastTime = 0;
 
-/* ---------- AUDIO (iOS SAFE) ---------- */
+/* ---------- AUDIO (iOS COMPLIANT) ---------- */
 let audioCtx = null;
+let soundEnabled = false;
 
-function unlockAudio(){
-  if(!audioCtx){
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if(audioCtx.state === 'suspended'){
-    audioCtx.resume();
-  }
-}
+soundBtn.onclick = () => {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx.resume().then(() => {
+    soundEnabled = true;
+
+    // test beep
+    const osc = audioCtx.createOscillator();
+    osc.frequency.value = 1000;
+    osc.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+
+    soundBtn.remove();
+  });
+};
 
 function beep(){
-  if(!audioCtx) return;
+  if(!soundEnabled || !audioCtx) return;
 
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
 
   osc.type = 'square';
-  osc.frequency.value = 1200;   // loud scanner-style beep
+  osc.frequency.value = 1200;
   gain.gain.value = 0.9;
 
   osc.connect(gain);
@@ -140,7 +165,6 @@ function handleScan(code){
 
   scanned.add(row.Stock);
 
-  // 🔥 FEEDBACK
   beep();
   vibrate();
   greenFlash();
@@ -178,8 +202,6 @@ els.file.onchange = e => {
 
 /* ---------- CAMERA ---------- */
 els.scan.onclick = async () => {
-  unlockAudio(); // 🔊 REQUIRED for iOS sound
-
   if(!rows.length){
     alert('Upload CSV first');
     return;
@@ -210,30 +232,6 @@ window.closeCam = () => {
   reader?.reset();
   stream?.getTracks().forEach(t=>t.stop());
   els.cam.style.display='none';
-};
-
-/* ---------- BLUETOOTH ---------- */
-let buffer='',timer=null;
-document.addEventListener('keydown',e=>{
-  if(e.key.length!==1) return;
-  buffer+=e.key;
-  clearTimeout(timer);
-  timer=setTimeout(()=>{
-    handleScan(buffer);
-    buffer='';
-  },55);
-});
-
-/* ---------- BUTTONS ---------- */
-els.reset.onclick = () => {
-  scanned.clear();
-  updateStats();
-};
-
-els.clear.onclick = () => {
-  rows=[];
-  scanned.clear();
-  updateStats();
 };
 
 updateStats();
