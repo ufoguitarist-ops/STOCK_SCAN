@@ -38,7 +38,7 @@ let scanned = new Set();
 let stream = null;
 let lastText = '', lastTime = 0;
 
-/* 🔒 PERSISTENT SCANNER (FIX) */
+/* 🔒 PERSISTENT SCANNER (iOS SAFE) */
 const codeReader = new ZXing.BrowserMultiFormatReader();
 
 /* ---------- HELPERS ---------- */
@@ -97,7 +97,7 @@ function buildMakeFilter(){
   els.makeFilter.value = localStorage.getItem('make') || '';
 }
 
-/* ---------- MODEL SUMMARY ---------- */
+/* ---------- MODEL SUMMARY (GROUPED) ---------- */
 function baseModel(model){
   return (model || 'Unknown').split(' ')[0].toUpperCase();
 }
@@ -113,7 +113,11 @@ function renderModelSummary(){
   const groups = {};
 
   rows.forEach(r => {
-    if (!isNew(r) || r.Make !== make) return;
+    if (!isNew(r)) return;
+
+    const makeNorm = String(r.Make || '').toLowerCase().trim();
+    const selectedMakeNorm = make.toLowerCase().trim();
+    if (makeNorm !== selectedMakeNorm) return;
 
     const base = baseModel(r.Model);
     const model = r.Model || 'Unknown Model';
@@ -121,13 +125,16 @@ function renderModelSummary(){
 
     groups[base] ??= {};
     groups[base][model] ??= {};
-    groups[base][model][cal] = (groups[base][model][cal] || 0) + 1;
+    groups[base][model][cal] =
+      (groups[base][model][cal] || 0) + 1;
   });
 
   let html = `<h3>📦 STOCK BREAKDOWN — ${make.toUpperCase()}</h3>`;
 
   Object.keys(groups).sort().forEach(base => {
-    html += `<div class="model-block"><div class="model-name">${base}</div>`;
+    html += `<div class="model-block">
+      <div class="model-name">${base}</div>`;
+
     Object.keys(groups[base]).sort().forEach(model => {
       html += `<div style="padding-left:10px;font-weight:600">${model}</div>`;
       Object.keys(groups[base][model]).sort().forEach(cal => {
@@ -138,6 +145,7 @@ function renderModelSummary(){
           </div>`;
       });
     });
+
     html += `</div>`;
   });
 
@@ -147,9 +155,13 @@ function renderModelSummary(){
 
 /* ---------- STATS ---------- */
 function filtered(){
+  const selectedMake = activeMake().toLowerCase().trim();
   return rows.filter(r =>
     isNew(r) &&
-    (!activeMake() || r.Make === activeMake())
+    (
+      !selectedMake ||
+      String(r.Make || '').toLowerCase().trim() === selectedMake
+    )
   );
 }
 
@@ -175,16 +187,22 @@ function load(){
   renderModelSummary();
 }
 
-/* ---------- SCAN (FIXED FOR SAFARI) ---------- */
+/* ---------- SCAN (FIXED WITH MAKE NORMALISATION) ---------- */
 function handleScan(code){
   const c = clean(code);
   if (!c) return;
 
+  const selectedMake = activeMake().toLowerCase().trim();
+
   const r = rows.find(x =>
     clean(x.Stock) === c &&
     isNew(x) &&
-    (!activeMake() || x.Make === activeMake())
+    (
+      !selectedMake ||
+      String(x.Make || '').toLowerCase().trim() === selectedMake
+    )
   );
+
   if (!r) return;
 
   if (scanned.has(r.Stock)){
@@ -208,11 +226,15 @@ function handleScan(code){
 }
 
 /* ---------- EVENTS ---------- */
-els.upload.onclick = () => { els.file.value=''; els.file.click(); };
+els.upload.onclick = () => {
+  els.file.value = '';
+  els.file.click();
+};
 
 els.file.onchange = e => {
   const f = e.target.files[0];
   if (!f) return;
+
   const r = new FileReader();
   r.onload = () => {
     rows = parseCSV(r.result);
@@ -231,7 +253,7 @@ els.makeFilter.onchange = () => {
   renderModelSummary();
 };
 
-/* 🔥 CAMERA START (FIXED) */
+/* ---------- CAMERA ---------- */
 els.scan.onclick = async () => {
   if (!rows.length) return alert('Upload CSV first');
 
@@ -248,19 +270,17 @@ els.scan.onclick = async () => {
     null,
     els.video,
     (res, err) => {
-      if (res) {
-        const t = res.getText();
-        const n = Date.now();
-        if (t === lastText && n - lastTime < 800) return;
-        lastText = t;
-        lastTime = n;
-        handleScan(t);
-      }
+      if (!res) return;
+      const t = res.getText();
+      const n = Date.now();
+      if (t === lastText && n - lastTime < 800) return;
+      lastText = t;
+      lastTime = n;
+      handleScan(t);
     }
   );
 };
 
-/* 🔥 CAMERA STOP */
 window.closeCam = () => {
   codeReader.reset();
   stream?.getTracks().forEach(t => t.stop());
@@ -283,10 +303,12 @@ document.addEventListener('keydown', e => {
 function exportCSV(list, name){
   if (!list.length) return alert('Nothing to export');
   const h = Object.keys(list[0]);
-  const csv = h.join(',') + '\n' +
+  const csv =
+    h.join(',') + '\n' +
     list.map(o => h.map(k => o[k] ?? '').join(',')).join('\n');
+
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = name;
   a.click();
 }
@@ -301,8 +323,16 @@ els.exportM.onclick = e => {
   exportCSV(filtered().filter(r => !scanned.has(r.Stock)), 'missing_new.csv');
 };
 
-els.reset.onclick = () => { scanned.clear(); save(); updateStats(); };
-els.clear.onclick = () => { localStorage.clear(); location.reload(); };
+els.reset.onclick = () => {
+  scanned.clear();
+  save();
+  updateStats();
+};
+
+els.clear.onclick = () => {
+  localStorage.clear();
+  location.reload();
+};
 
 /* ---------- INIT ---------- */
 load();
