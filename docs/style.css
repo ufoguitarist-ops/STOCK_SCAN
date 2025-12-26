@@ -10,10 +10,89 @@ body{
   color:white;
 }
 
-h1{text-align:center;margin:10px 0}
-.sub{text-align:center;color:#94a3b8;margin-bottom:16px}
+/* ---------- HEADERS ---------- */
+h1{
+  text-align:center;
+  margin:10px 0;
+  font-size:34px;
+}
+.sub{
+  text-align:center;
+  color:#94a3b8;
+  margin-bottom:16px;
+}
 
-/* BUTTONS */
+/* ---------- LOGIN PAGE ---------- */
+.login-page{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.login-wrap{
+  width:100%;
+  max-width:380px;
+  background:#0f172a;
+  padding:28px 24px 32px;
+  border-radius:22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+
+.login-wrap h1{
+  margin-top:0;
+}
+
+.login-sub{
+  text-align:center;
+  color:#94a3b8;
+  margin-bottom:22px;
+  font-size:18px;
+}
+
+.login-input{
+  width:100%;
+  padding:18px 16px;
+  margin-bottom:16px;
+  border-radius:16px;
+  border:none;
+  font-size:18px;
+  background:#020617;
+  color:white;
+}
+
+.login-input::placeholder{
+  color:#64748b;
+}
+
+.login-btn{
+  width:100%;
+  padding:18px;
+  border:none;
+  border-radius:18px;
+  background:#22c55e;
+  color:#022c22;
+  font-size:20px;
+  font-weight:900;
+  margin-top:8px;
+}
+
+.login-btn:active{
+  transform:scale(.98);
+}
+
+.login-msg{
+  text-align:center;
+  color:#f87171;
+  margin-top:16px;
+  font-size:16px;
+  opacity:0;
+  transition:opacity .2s;
+}
+.login-msg.show{opacity:1}
+
+/* ---------- BUTTONS ---------- */
 .buttons{
   display:flex;
   gap:8px;
@@ -30,43 +109,21 @@ h1{text-align:center;margin:10px 0}
   font-size:16px;
 }
 
-/* STATS */
+/* ---------- STATS ---------- */
 .stats{
   display:flex;
   justify-content:space-between;
   margin:14px 0;
 }
 
-/* CARD */
+/* ---------- CARD ---------- */
 .card{
   background:#0f172a;
   padding:16px;
   border-radius:16px;
 }
 
-/* BIG SCAN CONFIRMATION */
-.scan-confirm{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%) scale(.85);
-  background:#16a34a;
-  color:white;
-  padding:26px 32px;
-  border-radius:22px;
-  font-size:28px;
-  font-weight:900;
-  text-align:center;
-  opacity:0;
-  z-index:100000;
-  transition:opacity .15s ease, transform .15s ease;
-}
-.scan-confirm.show{
-  opacity:1;
-  transform:translate(-50%,-50%) scale(1);
-}
-
-/* BANNER */
+/* ---------- BANNER ---------- */
 .banner{
   background:#14532d;
   color:#dcfce7;
@@ -78,7 +135,7 @@ h1{text-align:center;margin:10px 0}
 }
 .hidden{display:none}
 
-/* TOAST (fallback) */
+/* ---------- TOAST ---------- */
 .toast{
   position:fixed;
   bottom:28px;
@@ -93,7 +150,7 @@ h1{text-align:center;margin:10px 0}
 }
 .toast.show{opacity:1}
 
-/* GREEN FLASH */
+/* ---------- GREEN FLASH ---------- */
 .flash{
   position:fixed;
   inset:0;
@@ -105,7 +162,29 @@ h1{text-align:center;margin:10px 0}
 }
 .flash.active{opacity:1}
 
-/* CAMERA */
+/* ---------- BIG SCAN CONFIRM ---------- */
+.scan-confirm{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(.85);
+  background:#16a34a;
+  color:white;
+  padding:28px 36px;
+  border-radius:24px;
+  font-size:30px;
+  font-weight:900;
+  text-align:center;
+  opacity:0;
+  z-index:100000;
+  transition:opacity .15s ease, transform .15s ease;
+}
+.scan-confirm.show{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
+
+/* ---------- CAMERA ---------- */
 .cam{
   position:fixed;
   inset:0;
@@ -122,8 +201,8 @@ h1{text-align:center;margin:10px 0}
   position:absolute;
   bottom:20px;
   left:20px;
-  padding:12px 16px;
-  border-radius:12px;
+  padding:14px 18px;
+  border-radius:14px;
   border:none;
   background:#1e293b;
   color:white;
