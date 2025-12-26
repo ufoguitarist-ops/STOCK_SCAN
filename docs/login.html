@@ -3,48 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Login – Stock Scan</title>
+<title>Stock Scan – PIN Login</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-page">
 
 <div class="login-wrap">
   <h1>STOCK SCAN</h1>
-  <p class="login-sub">Secure Login</p>
+  <p class="login-sub">Enter PIN</p>
 
-  <input
-    id="user"
-    class="login-input"
-    placeholder="Username"
-    autocomplete="off"
-  >
+  <div id="pinDots" class="pin-dots">
+    <span></span><span></span><span></span><span></span>
+  </div>
 
-  <input
-    id="pass"
-    class="login-input"
-    placeholder="Password"
-    type="password"
-  >
-
-  <button class="login-btn" onclick="login()">Login</button>
+  <div class="pin-pad">
+    <button onclick="press(1)">1</button>
+    <button onclick="press(2)">2</button>
+    <button onclick="press(3)">3</button>
+    <button onclick="press(4)">4</button>
+    <button onclick="press(5)">5</button>
+    <button onclick="press(6)">6</button>
+    <button onclick="press(7)">7</button>
+    <button onclick="press(8)">8</button>
+    <button onclick="press(9)">9</button>
+    <button class="wide" onclick="clearPin()">Clear</button>
+    <button onclick="press(0)">0</button>
+    <button class="wide danger" onclick="back()">⌫</button>
+  </div>
 
   <div id="loginMsg" class="login-msg"></div>
 </div>
 
 <script>
-function login(){
-  const u = document.getElementById('user').value.trim();
-  const p = document.getElementById('pass').value.trim();
+const CORRECT_PIN = '1234';
+let entered = '';
 
-  if(u === 'admin' && p === '1234'){
-    localStorage.setItem('logged','yes');
-    location.href = 'index.html';
-  } else {
-    const m = document.getElementById('loginMsg');
-    m.textContent = 'Invalid login';
-    m.classList.add('show');
-    setTimeout(()=>m.classList.remove('show'),1500);
+const dots = document.querySelectorAll('#pinDots span');
+const msg = document.getElementById('loginMsg');
+
+function updateDots(){
+  dots.forEach((d,i)=>{
+    d.classList.toggle('filled', i < entered.length);
+  });
+}
+
+function press(n){
+  if(entered.length >= 4) return;
+  entered += n;
+  updateDots();
+
+  if(entered.length === 4){
+    if(entered === CORRECT_PIN){
+      localStorage.setItem('logged','yes');
+      location.href = 'index.html';
+    } else {
+      msg.textContent = 'Incorrect PIN';
+      msg.classList.add('show');
+      setTimeout(()=>msg.classList.remove('show'),1200);
+      entered = '';
+      updateDots();
+    }
   }
+}
+
+function clearPin(){
+  entered = '';
+  updateDots();
+}
+
+function back(){
+  entered = entered.slice(0,-1);
+  updateDots();
 }
 </script>
 
