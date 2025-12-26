@@ -41,13 +41,14 @@ const clean = v =>
     .replace(/\s+/g, '')
     .trim();
 
-function toast(msg) {
+/* ---------- VISUAL FEEDBACK ---------- */
+function showToast(msg) {
   els.toast.textContent = msg;
-  els.toast.className = 'toast show';
-  setTimeout(() => (els.toast.className = 'toast'), 900);
+  els.toast.classList.add('show');
+  setTimeout(() => els.toast.classList.remove('show'), 900);
 }
 
-function flashGreen() {
+function greenFlash() {
   els.flash.classList.add('show');
   setTimeout(() => els.flash.classList.remove('show'), 150);
 }
@@ -98,7 +99,7 @@ function hasDuplicateSerials(data) {
   return [...map.values()].some(s => s.size > 1);
 }
 
-/* ---------- SCAN HANDLER (FIXED) ---------- */
+/* ---------- SCAN HANDLER (VISUAL FIXED) ---------- */
 function handleScan(code) {
   const cleaned = clean(code);
   if (!cleaned) return;
@@ -109,17 +110,20 @@ function handleScan(code) {
   );
 
   if (!row) {
-    toast('Not in NEW stock');
+    showToast('NOT IN NEW STOCK');
     return;
   }
 
   if (scanned.has(row.Stock)) {
-    toast('Already scanned');
+    showToast('ALREADY SCANNED');
     return;
   }
 
   scanned.add(row.Stock);
-  flashGreen();
+
+  // ✅ VISUAL CONFIRMATION
+  greenFlash();
+  showToast('SCANNED');
 
   els.stock.textContent = `STOCK: ${row.Stock}`;
   els.serial.textContent = `SERIAL: ${row.Serial || '—'}`;
@@ -127,7 +131,6 @@ function handleScan(code) {
     `${row.Make || '—'} · ${row.Model || '—'} · ${row.Calibre || '—'}`;
 
   els.banner.classList.add('hidden');
-  toast('Scanned');
   updateStats();
 }
 
@@ -215,14 +218,14 @@ document.addEventListener('keydown', e => {
 els.reset.onclick = () => {
   scanned.clear();
   updateStats();
-  toast('Scan reset');
+  showToast('SCAN RESET');
 };
 
 els.clear.onclick = () => {
   rows = [];
   scanned.clear();
   updateStats();
-  toast('CSV cleared');
+  showToast('CSV CLEARED');
 };
 
 els.exportS.onclick = () =>
