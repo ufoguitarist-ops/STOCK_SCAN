@@ -37,8 +37,12 @@ if (localStorage.getItem('logged') !== 'yes') {
 
   <div id="searchBody" class="panel-body hidden">
     <div class="search-row">
-      <input id="searchInput" type="text" placeholder="Search model e.g. HW100">
-      <button id="btnVoice">🎤</button>
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Search model e.g. HW100"
+        autocomplete="off"
+      />
     </div>
     <div id="searchResults"></div>
   </div>
