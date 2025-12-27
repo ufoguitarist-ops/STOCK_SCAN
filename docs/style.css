@@ -157,3 +157,35 @@ h1{
   background:#1e293b;
   color:white;
 }
+
+/* 🔍 SMART SEARCH */
+.panel{
+  background:#0f172a;
+  margin:16px;
+  border-radius:18px;
+}
+.panel-header{
+  padding:16px;
+  font-weight:800;
+  display:flex;
+  justify-content:space-between;
+  cursor:pointer;
+}
+.panel-body{padding:16px}
+.search-row{display:flex;gap:8px;margin-bottom:12px}
+.search-row input{
+  flex:1;
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  background:#020617;
+  color:white;
+}
+.search-row button{
+  border:none;
+  border-radius:14px;
+  padding:0 16px;
+  font-size:18px;
+  background:#1e293b;
+  color:white;
+}
