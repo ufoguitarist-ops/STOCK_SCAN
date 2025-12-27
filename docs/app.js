@@ -38,16 +38,8 @@ let scanned = new Set();
 let stream = null;
 let lastText = '', lastTime = 0;
 
-/* ---------- SCANNER (FORMAT-RESTRICTED) ---------- */
-const codeReader = new ZXing.BrowserMultiFormatReader(
-  new Map([
-    [ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.CODE_128,
-      ZXing.BarcodeFormat.CODE_39,
-      ZXing.BarcodeFormat.EAN_13
-    ]]
-  ])
-);
+/* ---------- SCANNER ---------- */
+const codeReader = new ZXing.BrowserMultiFormatReader();
 
 /* ---------- HELPERS ---------- */
 const clean = v =>
@@ -212,11 +204,10 @@ els.makeFilter.onchange=()=>{
   updateStats(); renderModelSummary();
 };
 
-/* ---------- CAMERA (MAX TUNED) ---------- */
+/* ---------- CAMERA (TUNED) ---------- */
 els.scan.onclick=async()=>{
   if(!rows.length) return alert('Upload CSV first');
   els.cam.style.display='block';
-
   stream=await navigator.mediaDevices.getUserMedia({
     video:{
       facingMode:{ideal:'environment'},
@@ -224,21 +215,14 @@ els.scan.onclick=async()=>{
       height:{ideal:1080}
     }
   });
-
-  els.video.srcObject=stream;
-  await els.video.play();
-
-  // force autofocus refresh (Safari trick)
-  setTimeout(()=>{ els.video.srcObject = stream; },500);
+  els.video.srcObject=stream; await els.video.play();
 
   codeReader.decodeFromVideoDevice(null,els.video,res=>{
-    try{
-      if(!res) return;
-      const t=res.getText(),n=Date.now();
-      if(t===lastText&&n-lastTime<350) return;
-      lastText=t; lastTime=n;
-      handleScan(t);
-    }catch{}
+    if(!res) return;
+    const t=res.getText(),n=Date.now();
+    if(t===lastText&&n-lastTime<350) return;
+    lastText=t; lastTime=n;
+    handleScan(t);
   });
 };
 
