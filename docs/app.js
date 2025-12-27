@@ -48,12 +48,8 @@ const clean = v =>
 const isNew = r =>
   String(r.Condition || '').toLowerCase().includes('new');
 
-/* 🔒 MAKE NORMALISER (FIX) */
 const normaliseMake = v =>
-  String(v || '')
-    .replace(/"/g, '')
-    .replace(/\u00A0/g, ' ')
-    .trim();
+  String(v || '').replace(/"/g,'').replace(/\u00A0/g,' ').trim();
 
 /* ---------- UI FEEDBACK ---------- */
 const vibrate = () => navigator.vibrate?.([120,40,120]);
@@ -80,7 +76,7 @@ function parseCSV(text){
       const n=x.toLowerCase();
       if(n.includes('stock')) o.Stock = clean(v[i]);
       if(n.includes('serial')) o.Serial = v[i]?.trim();
-      if(n==='make') o.Make = normaliseMake(v[i]);   // ✅ FIX HERE
+      if(n==='make') o.Make = normaliseMake(v[i]);
       if(n==='model') o.Model = v[i]?.trim();
       if(n.includes('cal')) o.Calibre = v[i]?.trim();
       if(n==='condition') o.Condition = v[i]?.trim();
@@ -91,10 +87,10 @@ function parseCSV(text){
 
 /* ---------- DUPLICATE SERIAL CHECK ---------- */
 function hasDuplicateSerials(data){
-  const map = new Map();
+  const map=new Map();
   for(const r of data){
     if(!r.Serial) continue;
-    if(!map.has(r.Serial)) map.set(r.Serial,new Set());
+    map.has(r.Serial)||map.set(r.Serial,new Set());
     map.get(r.Serial).add(r.Stock);
   }
   return [...map.values()].some(s=>s.size>1);
@@ -111,7 +107,6 @@ function buildMakeFilter(){
 
 /* ---------- MODEL SUMMARY ---------- */
 function baseModel(m){return (m||'Unknown').split(' ')[0].toUpperCase();}
-
 function renderModelSummary(){
   const make=els.makeFilter.value;
   if(!make){
@@ -119,13 +114,11 @@ function renderModelSummary(){
     els.modelSummary.innerHTML='';
     return;
   }
-
   const g={};
   rows.forEach(r=>{
-    if(!isNew(r) || r.Make !== make) return;
+    if(!isNew(r)||r.Make!==make) return;
     const b=baseModel(r.Model);
-    g[b]??={};
-    g[b][r.Model]??={};
+    g[b]??={}; g[b][r.Model]??={};
     g[b][r.Model][r.Calibre]=(g[b][r.Model][r.Calibre]||0)+1;
   });
 
@@ -140,7 +133,6 @@ function renderModelSummary(){
     });
     html+='</div>';
   });
-
   els.modelSummary.innerHTML=html;
   els.modelSummary.classList.remove('hidden');
 }
@@ -150,7 +142,6 @@ function filtered(){
   const mk=els.makeFilter.value.toLowerCase().trim();
   return rows.filter(r=>isNew(r)&&(!mk||r.Make.toLowerCase().trim()===mk));
 }
-
 function updateStats(){
   const f=filtered(),s=f.filter(r=>scanned.has(r.Stock));
   els.expected.textContent=f.length;
@@ -166,9 +157,7 @@ function save(){
 function load(){
   rows=JSON.parse(localStorage.getItem('rows')||'[]');
   scanned=new Set(JSON.parse(localStorage.getItem('scanned')||'[]'));
-  buildMakeFilter();
-  updateStats();
-  renderModelSummary();
+  buildMakeFilter(); updateStats(); renderModelSummary();
 }
 
 /* ---------- SCAN ---------- */
@@ -180,7 +169,6 @@ function handleScan(code){
   if(scanned.has(r.Stock)){
     vibrate(); confirm('⚠ DUPLICATE'); return;
   }
-
   scanned.add(r.Stock); save();
   vibrate(); flash(); confirm('✔ SCANNED');
 
@@ -193,11 +181,8 @@ function handleScan(code){
 
 /* ---------- EVENTS ---------- */
 els.upload.onclick=()=>{els.file.value='';els.file.click();};
-
 els.file.onchange=e=>{
-  const f=e.target.files[0];
-  if(!f) return;
-
+  const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=()=>{
     rows=parseCSV(r.result);
@@ -206,7 +191,6 @@ els.file.onchange=e=>{
     buildMakeFilter();
     updateStats();
     renderModelSummary();
-
     els.banner.textContent = hasDuplicateSerials(rows)
       ? '⚠ DUPLICATE SERIAL NUMBERS FOUND'
       : 'NO DOUBLE BOOKINGS DETECTED';
@@ -217,21 +201,26 @@ els.file.onchange=e=>{
 
 els.makeFilter.onchange=()=>{
   localStorage.setItem('make',els.makeFilter.value);
-  updateStats();
-  renderModelSummary();
+  updateStats(); renderModelSummary();
 };
 
-/* ---------- CAMERA ---------- */
+/* ---------- CAMERA (TUNED) ---------- */
 els.scan.onclick=async()=>{
   if(!rows.length) return alert('Upload CSV first');
   els.cam.style.display='block';
-  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+  stream=await navigator.mediaDevices.getUserMedia({
+    video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1920},
+      height:{ideal:1080}
+    }
+  });
   els.video.srcObject=stream; await els.video.play();
 
   codeReader.decodeFromVideoDevice(null,els.video,res=>{
     if(!res) return;
     const t=res.getText(),n=Date.now();
-    if(t===lastText&&n-lastTime<800) return;
+    if(t===lastText&&n-lastTime<350) return;
     lastText=t; lastTime=n;
     handleScan(t);
   });
@@ -260,7 +249,6 @@ function exportCSV(list,name){
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download=name; a.click();
 }
-
 els.exportS.onclick=e=>{e.preventDefault();exportCSV(filtered().filter(r=>scanned.has(r.Stock)),'scanned_new.csv');};
 els.exportM.onclick=e=>{e.preventDefault();exportCSV(filtered().filter(r=>!scanned.has(r.Stock)),'missing_new.csv');};
 
