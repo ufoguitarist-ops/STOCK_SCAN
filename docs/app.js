@@ -48,9 +48,12 @@ const clean = v =>
 const isNew = r =>
   String(r.Condition || '').toLowerCase().includes('new');
 
-/* 🔒 MAKE NORMALISER (SAFE) */
-const normMake = v =>
-  String(v || '').replace(/"/g,'').toLowerCase().trim();
+/* 🔒 MAKE NORMALISER (FIX) */
+const normaliseMake = v =>
+  String(v || '')
+    .replace(/"/g, '')
+    .replace(/\u00A0/g, ' ')
+    .trim();
 
 /* ---------- UI FEEDBACK ---------- */
 const vibrate = () => navigator.vibrate?.([120,40,120]);
@@ -75,12 +78,12 @@ function parseCSV(text){
     const v=r.split(','),o={};
     heads.forEach((x,i)=>{
       const n=x.toLowerCase();
-      if(n.includes('stock'))o.Stock=clean(v[i]);
-      if(n.includes('serial'))o.Serial=v[i]?.trim();
-      if(n==='make')o.Make=v[i]?.trim();
-      if(n==='model')o.Model=v[i]?.trim();
-      if(n.includes('cal'))o.Calibre=v[i]?.trim();
-      if(n==='condition')o.Condition=v[i]?.trim();
+      if(n.includes('stock')) o.Stock = clean(v[i]);
+      if(n.includes('serial')) o.Serial = v[i]?.trim();
+      if(n==='make') o.Make = normaliseMake(v[i]);   // ✅ FIX HERE
+      if(n==='model') o.Model = v[i]?.trim();
+      if(n.includes('cal')) o.Calibre = v[i]?.trim();
+      if(n==='condition') o.Condition = v[i]?.trim();
     });
     return o;
   }).filter(r=>r.Stock);
@@ -119,7 +122,7 @@ function renderModelSummary(){
 
   const g={};
   rows.forEach(r=>{
-    if(!isNew(r) || normMake(r.Make) !== normMake(make)) return;
+    if(!isNew(r) || r.Make !== make) return;
     const b=baseModel(r.Model);
     g[b]??={};
     g[b][r.Model]??={};
@@ -144,8 +147,8 @@ function renderModelSummary(){
 
 /* ---------- STATS ---------- */
 function filtered(){
-  const mk=normMake(els.makeFilter.value);
-  return rows.filter(r=>isNew(r)&&(!mk||normMake(r.Make)===mk));
+  const mk=els.makeFilter.value.toLowerCase().trim();
+  return rows.filter(r=>isNew(r)&&(!mk||r.Make.toLowerCase().trim()===mk));
 }
 
 function updateStats(){
@@ -168,7 +171,7 @@ function load(){
   renderModelSummary();
 }
 
-/* ---------- SCAN (FILTER IGNORED) ---------- */
+/* ---------- SCAN ---------- */
 function handleScan(code){
   const c=clean(code);
   const r=rows.find(x=>clean(x.Stock)===c&&isNew(x));
