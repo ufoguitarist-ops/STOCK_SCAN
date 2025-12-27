@@ -28,26 +28,6 @@ if (localStorage.getItem('logged') !== 'yes') {
   <option value="">All Makes</option>
 </select>
 
-<!-- 🔍 SMART SEARCH PANEL -->
-<div class="panel">
-  <div class="panel-header" onclick="toggleSearchPanel()">
-    <span>🔍 Smart Model Search</span>
-    <span id="searchToggle">▼</span>
-  </div>
-
-  <div id="searchBody" class="panel-body hidden">
-    <div class="search-row">
-      <input
-        id="searchInput"
-        type="text"
-        placeholder="Search model e.g. HW100"
-        autocomplete="off"
-      />
-    </div>
-    <div id="searchResults"></div>
-  </div>
-</div>
-
 <!-- MODEL / CALIBRE SUMMARY -->
 <div id="modelSummary" class="model-summary hidden"></div>
 
