@@ -64,7 +64,7 @@ const confirm = t => {
 function parseCSV(text){
   const lines = text.split(/\r?\n/).filter(l=>l.trim());
   const h = lines.findIndex(l=>/stock/i.test(l)&&/condition/i.test(l));
-  if(h<0) return [];
+  if(h < 0) return [];
   const heads = lines[h].split(',');
 
   return lines.slice(h+1).map(r=>{
@@ -81,6 +81,62 @@ function parseCSV(text){
     return o;
   }).filter(r=>r.Stock);
 }
+
+/* ---------- MAKE FILTER ---------- */
+function buildMakeFilter(){
+  const makes=[...new Set(rows.filter(isNew).map(r=>r.Make).filter(Boolean))];
+  els.makeFilter.innerHTML =
+    '<option value="">All Makes</option>' +
+    makes.map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+
+/* ---------- STATS ---------- */
+function filtered(){
+  const mk = els.makeFilter.value.toLowerCase().trim();
+  return rows.filter(r=>isNew(r)&&(!mk||r.Make.toLowerCase().trim()===mk));
+}
+
+function updateStats(){
+  const f=filtered(), s=f.filter(r=>scanned.has(r.Stock));
+  els.expected.textContent=f.length;
+  els.scanned.textContent=s.length;
+  els.remaining.textContent=f.length-s.length;
+}
+
+/* ---------- SAVE / LOAD ---------- */
+function save(){
+  localStorage.setItem('rows',JSON.stringify(rows));
+  localStorage.setItem('scanned',JSON.stringify([...scanned]));
+}
+function load(){
+  rows=JSON.parse(localStorage.getItem('rows')||'[]');
+  scanned=new Set(JSON.parse(localStorage.getItem('scanned')||'[]'));
+  if(rows.length){
+    buildMakeFilter();
+    updateStats();
+  }
+}
+
+/* ---------- UPLOAD CSV ---------- */
+els.upload.onclick = () => {
+  els.file.value = '';
+  els.file.click();
+};
+
+els.file.onchange = e => {
+  const f = e.target.files[0];
+  if(!f) return;
+
+  const r = new FileReader();
+  r.onload = () => {
+    rows = parseCSV(r.result);
+    scanned.clear();
+    save();
+    buildMakeFilter();
+    updateStats();
+  };
+  r.readAsText(f);
+};
 
 /* ---------- SMART SEARCH ---------- */
 const searchInput = document.getElementById('searchInput');
@@ -113,7 +169,7 @@ function renderSearchResults(term){
     if(normSearch(r.Model).includes(key)){
       out[r.Model] ??= {};
       out[r.Model][r.Calibre] =
-        (out[r.Model][r.Calibre] || 0) + 1;
+        (out[r.Model][r.Calibre]||0)+1;
     }
   });
 
