@@ -48,6 +48,10 @@ const clean = v =>
 const isNew = r =>
   String(r.Condition || '').toLowerCase().includes('new');
 
+/* 🔒 MAKE NORMALISER (SAFE) */
+const normMake = v =>
+  String(v || '').replace(/"/g,'').toLowerCase().trim();
+
 /* ---------- UI FEEDBACK ---------- */
 const vibrate = () => navigator.vibrate?.([120,40,120]);
 const flash = () => {
@@ -115,7 +119,7 @@ function renderModelSummary(){
 
   const g={};
   rows.forEach(r=>{
-    if(!isNew(r)||r.Make!==make) return;
+    if(!isNew(r) || normMake(r.Make) !== normMake(make)) return;
     const b=baseModel(r.Model);
     g[b]??={};
     g[b][r.Model]??={};
@@ -140,8 +144,8 @@ function renderModelSummary(){
 
 /* ---------- STATS ---------- */
 function filtered(){
-  const mk=els.makeFilter.value.toLowerCase().trim();
-  return rows.filter(r=>isNew(r)&&(!mk||String(r.Make).toLowerCase().trim()===mk));
+  const mk=normMake(els.makeFilter.value);
+  return rows.filter(r=>isNew(r)&&(!mk||normMake(r.Make)===mk));
 }
 
 function updateStats(){
@@ -200,7 +204,6 @@ els.file.onchange=e=>{
     updateStats();
     renderModelSummary();
 
-    /* ✅ DUPLICATE MESSAGE RESTORED */
     els.banner.textContent = hasDuplicateSerials(rows)
       ? '⚠ DUPLICATE SERIAL NUMBERS FOUND'
       : 'NO DOUBLE BOOKINGS DETECTED';
